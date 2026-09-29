@@ -10,6 +10,9 @@ pequeno de sinais de Libras, montar a sequência de palavras e falar a frase.
   CustomTkinter — tudo gratuito e executado localmente (offline)
 - **Plano técnico completo:** [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 
+> **Vai testar ou gravar sinais para o grupo?** Siga o
+> [tutorial passo a passo](docs/TUTORIAL_COLEGAS.md).
+
 ## Dois modos
 
 | | **Modo usuário / demonstração** | **Modo desenvolvimento / treinamento** |
@@ -158,6 +161,7 @@ pessoas ou mais**, e o dobro para `_NADA`.
 
 ```bash
 python scripts/desenvolvimento/analisar_dataset.py       # relatório + gráficos em reports/
+python scripts/desenvolvimento/analisar_dataset.py --reconstruir-metadata   # após juntar gravações de várias pessoas
 ```
 
 **4. Treinar:**

@@ -139,6 +139,44 @@ def _escrever_metadata(linhas: list[dict[str, str]]) -> None:
         escritor.writerows(linhas)
 
 
+def _linha_metadata(caminho: Path, frames: np.ndarray, sinal: str, pessoa: str, data_hora: str) -> dict:
+    est = estatisticas_amostra(frames)
+    return {
+        "arquivo": caminho_relativo(caminho),
+        "sinal": sinal,
+        "pessoa": pessoa,
+        "data_hora": data_hora,
+        "num_frames": est["num_frames"],
+        "fps_medio": f"{est['fps_medio']:.1f}",
+        "pct_frames_com_mao": f"{est['pct_frames_com_mao']:.2f}",
+        "pct_frames_com_ombros": f"{est['pct_frames_com_ombros']:.2f}",
+    }
+
+
+def reconstruir_metadata() -> int:
+    """Recria o metadata.csv a partir dos .npy de data/raw. Usado ao juntar
+    gravações de várias pessoas (cada uma traz o seu metadata.csv, e
+    descompactar um zip por cima do outro deixaria o índice incompleto).
+    Devolve quantas amostras foram indexadas; arquivos ilegíveis ficam de fora
+    (a análise do dataset os aponta)."""
+    linhas = []
+    for caminho in listar_amostras():
+        try:
+            frames = np.load(caminho)
+        except (OSError, ValueError):
+            continue
+        if frames.ndim != 2 or frames.shape[1] != config.TAM_FRAME_BRUTO or len(frames) < 2:
+            continue
+        partes = caminho.stem.split("_")  # pessoa_AAAAMMDD_HHMMSS_micro
+        try:
+            data_hora = datetime.strptime(f"{partes[1]}_{partes[2]}", "%Y%m%d_%H%M%S").isoformat()
+        except (IndexError, ValueError):
+            data_hora = ""
+        linhas.append(_linha_metadata(caminho, frames, caminho.parent.name, pessoa_do_arquivo(caminho), data_hora))
+    _escrever_metadata(linhas)
+    return len(linhas)
+
+
 def salvar_amostra(frames: np.ndarray, sinal: str, pessoa: str) -> Path:
     """Grava a amostra em data/raw/<sinal>/ e acrescenta a linha no metadata.csv."""
     agora = datetime.now()
@@ -147,17 +185,7 @@ def salvar_amostra(frames: np.ndarray, sinal: str, pessoa: str) -> Path:
     caminho = pasta / f"{pessoa}_{agora:%Y%m%d_%H%M%S_%f}.npy"
     np.save(caminho, frames.astype(np.float32))
 
-    est = estatisticas_amostra(frames)
-    linha = {
-        "arquivo": caminho_relativo(caminho),
-        "sinal": sinal,
-        "pessoa": pessoa,
-        "data_hora": agora.isoformat(timespec="seconds"),
-        "num_frames": est["num_frames"],
-        "fps_medio": f"{est['fps_medio']:.1f}",
-        "pct_frames_com_mao": f"{est['pct_frames_com_mao']:.2f}",
-        "pct_frames_com_ombros": f"{est['pct_frames_com_ombros']:.2f}",
-    }
+    linha = _linha_metadata(caminho, frames, sinal, pessoa, agora.isoformat(timespec="seconds"))
     novo = not config.ARQ_METADATA.is_file()
     config.ARQ_METADATA.parent.mkdir(parents=True, exist_ok=True)
     with open(config.ARQ_METADATA, "a", newline="", encoding="utf-8") as arquivo:

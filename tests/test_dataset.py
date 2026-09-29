@@ -136,3 +136,16 @@ def test_validar_dados_treino():
 def test_sem_amostras_validas(dataset_vazio):
     with pytest.raises(dataset.ErroDataset, match="nenhuma amostra"):
         dataset.construir_dados_treino()
+
+
+def test_juntar_gravacoes_e_reconstruir_metadata(dataset_vazio):
+    """Simula o metadata.csv de uma pessoa sobrescrito pelo de outra ao juntar zips."""
+    _popular(4)
+    antes = dataset.carregar_metadata()
+    config.ARQ_METADATA.write_text(",".join(dataset.COLUNAS_METADATA) + "\n", encoding="utf-8")  # índice perdido
+    assert any("não está no metadata" in i for i in dataset.analisar_dataset().inconsistencias)
+    assert dataset.reconstruir_metadata() == len(antes)
+    depois = dataset.carregar_metadata()
+    assert sorted(l["arquivo"] for l in depois) == sorted(l["arquivo"] for l in antes)
+    assert {l["pessoa"] for l in depois} == {"ana", "bia"} and all(l["data_hora"] for l in depois)
+    assert dataset.analisar_dataset().inconsistencias == []

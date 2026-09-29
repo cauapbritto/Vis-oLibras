@@ -8,6 +8,7 @@ reports/analise_dataset.txt e os gráficos em reports/analise_dataset.png.
 Uso:
     python scripts/desenvolvimento/analisar_dataset.py
     python scripts/desenvolvimento/analisar_dataset.py --remover-invalidas   # pede confirmação
+    python scripts/desenvolvimento/analisar_dataset.py --reconstruir-metadata  # após juntar gravações
     python scripts/desenvolvimento/analisar_dataset.py --sem-grafico
 """
 
@@ -202,9 +203,13 @@ def main() -> int:
     parser.add_argument("--detalhes", action="store_true", help="lista todas as amostras com problema")
     parser.add_argument("--sem-grafico", action="store_true", help="não gera o PNG")
     parser.add_argument("--remover-invalidas", action="store_true", help="apaga as amostras inválidas")
+    parser.add_argument("--reconstruir-metadata", action="store_true",
+                        help="recria o metadata.csv a partir dos arquivos (após juntar gravações de várias pessoas)")
     parser.add_argument("--sim", action="store_true", help="não pede confirmação ao remover")
     args = parser.parse_args()
 
+    if args.reconstruir_metadata:
+        print(f"metadata.csv reconstruído: {dataset.reconstruir_metadata()} amostras indexadas\n")
     rel = dataset.analisar_dataset()
     texto = "\n".join(montar_relatorio(rel, args.detalhes))
     print(texto)
