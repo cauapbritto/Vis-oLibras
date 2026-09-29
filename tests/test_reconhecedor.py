@@ -26,7 +26,7 @@ def classificador():
         X.append(janela_para_vetor(np.stack([linha(t) for t in np.linspace(0, 1.5, 45)])))
         y.append(config.CLASSE_NADA)
     modelo = Pipeline([("modelo", RandomForestClassifier(n_estimators=50, random_state=0))])
-    return Classificador(modelo.fit(np.stack(X), y), {})
+    return Classificador(modelo.fit(np.stack(X), y), {"versao_features": config.VERSAO_FEATURES})
 
 
 def _stream(roteiro):
@@ -92,3 +92,45 @@ def test_buffer_mantem_so_a_janela():
     assert buffer.duracao_atual <= 1.5 and buffer.pronta()
     assert buffer.vetor().shape == (config.TAM_FEATURES_JANELA,)
     assert buffer.pct_com_maos() == 1.0
+
+
+def test_tempo_real_diferencia_aceno_de_mao_parada_no_mesmo_lugar():
+    """OI = aceno e NOME = mão parada, na MESMA posição: só o movimento os separa.
+    Na janela deslizante o aceno aparece em qualquer fase, diferente do treino."""
+    from sinteticos import aceno
+
+    centro = (0.70, 0.62)
+    rng = np.random.default_rng(0)
+
+    def parado(n=45):  # mão parada com um leve tremor no punho (como na detecção real)
+        return np.stack([linha(t, direita=mao((centro[0] + rng.normal(0, 0.002), centro[1] + rng.normal(0, 0.002))))
+                         for t in np.linspace(0, 1.5, n)])
+
+    X, y = [], []
+    for _ in range(20):
+        X.append(janela_para_vetor(aceno(ciclos=rng.uniform(1.6, 2.4), fase=rng.uniform(0, 6.28), centro=centro)))
+        y.append("OI")
+        X.append(janela_para_vetor(parado()))
+        y.append("NOME")
+        X.append(janela_para_vetor(np.stack([linha(t) for t in np.linspace(0, 1.5, 45)])))
+        y.append(config.CLASSE_NADA)
+    modelo = Pipeline([("modelo", RandomForestClassifier(n_estimators=100, random_state=0))]).fit(np.stack(X), y)
+    reconhecedor = Reconhecedor(Classificador(modelo, {"versao_features": config.VERSAO_FEATURES}))
+
+    # 3 s acenando (2 ciclos a cada 1,5 s), mãos abaixadas, 3 s com a mão parada
+    stream = []
+    t = 0.0
+    for trecho in ("OI", None, "NOME"):
+        for _ in range(int((3.0 if trecho else 1.5) * FPS)):
+            if trecho == "OI":
+                x = centro[0] + 0.06 * np.sin(2 * np.pi * 2 * t / 1.5)
+                stream.append(linha(t, direita=mao((x, centro[1]))))
+            elif trecho == "NOME":
+                stream.append(linha(t, direita=mao((centro[0] + rng.normal(0, 0.002),
+                                                    centro[1] + rng.normal(0, 0.002)))))
+            else:
+                stream.append(linha(t))
+            t += 1 / FPS
+    aceitas = [e.palavra for l in stream
+               if (e := reconhecedor.processar(l, float(l[config.COL_TIMESTAMP]))).palavra]
+    assert aceitas == ["OI", "NOME"]

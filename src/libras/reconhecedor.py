@@ -1,4 +1,7 @@
-"""Reconhecimento frame a frame: buffer -> features -> classificador -> estabilizador.
+"""Reconhecimento frame a frame: sequência temporal -> features -> classificador -> estabilizador.
+
+O vetor é gerado na versão de features DO MODELO carregado (1 = janela
+posicional, 2 = + movimento), então modelos antigos continuam funcionando.
 
 Junta as peças do tempo real num só lugar, sem câmera nem tela, para que o
 executar.py fique simples e o fluxo possa ser testado com landmarks sintéticos.
@@ -61,7 +64,7 @@ class Reconhecedor:
             estado.sinal, estado.confianca = config.CLASSE_NADA, 1.0
         else:
             try:
-                vetor = self.buffer.vetor()
+                vetor = self.buffer.vetor(self.classificador.versao_features)
             except ErroJanela:
                 estado.aviso = "Ombros não visíveis: afaste-se da câmera"
                 self._ultimo = estado

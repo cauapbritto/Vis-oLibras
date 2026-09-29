@@ -43,7 +43,8 @@ def montar_relatorio(rel: RelatorioDataset, detalhes: bool) -> list[str]:
         f"Amostras              : {total} ({total - len(invalidas)} válidas, {len(invalidas)} inválidas)",
         f"Frame bruto           : {config.TAM_FRAME_BRUTO} valores",
         f"Vetor de features     : {tamanhos} valores "
-        f"(esperado {config.TAM_FEATURES_JANELA} = {config.T_FRAMES} frames x {config.TAM_FEATURES_FRAME})",
+        f"(esperado {config.TAM_FEATURES_JANELA} = {config.T_FRAMES} frames x {config.TAM_FEATURES_FRAME} "
+        f"+ {config.TAM_MOVIMENTO} de movimento)",
         f"Versão das features   : {config.VERSAO_FEATURES}",
         "",
         "AMOSTRAS VÁLIDAS POR SINAL",

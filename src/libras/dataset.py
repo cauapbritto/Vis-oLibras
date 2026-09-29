@@ -416,6 +416,18 @@ def salvar_dados_treino(dados: DadosTreino) -> None:
     )
 
 
+def precisa_reconstruir() -> bool:
+    """dataset.npz ausente ou gerado com outra versão de features / T_FRAMES?"""
+    if not config.ARQ_DATASET.is_file():
+        return True
+    try:
+        with np.load(config.ARQ_DATASET, allow_pickle=False) as arquivo:
+            return (int(arquivo["versao_features"]) != config.VERSAO_FEATURES
+                    or int(arquivo["t_frames"]) != config.T_FRAMES)
+    except (OSError, ValueError, KeyError):
+        return True
+
+
 def carregar_dados_treino() -> DadosTreino:
     """Carrega e VALIDA o dataset.npz (versão das features, formato e rótulos)."""
     if not config.ARQ_DATASET.is_file():

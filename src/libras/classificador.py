@@ -5,13 +5,16 @@ Arquivos em models/:
     classes.json             os rótulos, na ordem das saídas do modelo
     classificador_info.json  configurações do treino, métricas e parâmetros das features
 
-Ao carregar, conferimos se o modelo foi treinado com as MESMAS features do
-config.py atual (versão, T_FRAMES, tamanho do vetor). Se não, é preciso retreinar.
+Ao carregar, conferimos se as features do modelo são compatíveis: a versão
+precisa ser uma das suportadas (features.VERSOES_SUPORTADAS) e T_FRAMES e o
+tamanho do vetor precisam bater. O tempo real gera o vetor na versão DO MODELO,
+então um modelo da versão 1 continua funcionando depois da versão 2.
 
 Uso no tempo real:
 
     classificador = carregar_classificador()
-    sinal, confianca = classificador.prever(features.janela_para_vetor(frames))
+    vetor = features.janela_para_vetor(frames, classificador.versao_features)
+    sinal, confianca = classificador.prever(vetor)
 """
 
 from __future__ import annotations
@@ -25,6 +28,7 @@ import joblib
 import numpy as np
 
 from libras import config
+from libras.features import VERSOES_SUPORTADAS, tamanho_vetor
 
 
 class ErroClassificador(RuntimeError):
@@ -35,6 +39,11 @@ class ErroClassificador(RuntimeError):
 class Classificador:
     modelo: Any           # Pipeline do scikit-learn com predict_proba
     info: dict[str, Any]
+
+    @property
+    def versao_features(self) -> int:
+        """Versão das features com que o modelo foi treinado (1 em modelos antigos)."""
+        return int(self.info.get("versao_features", 1))
 
     @property
     def classes(self) -> list[str]:
@@ -85,8 +94,11 @@ def carregar_classificador() -> Classificador:
     except Exception as erro:  # arquivo corrompido ou de outra versão do scikit-learn
         raise ErroClassificador(f"não foi possível carregar o modelo ({erro}); treine novamente") from erro
 
-    esperado = {"versao_features": config.VERSAO_FEATURES, "t_frames": config.T_FRAMES,
-                "tam_features": config.TAM_FEATURES_JANELA}
+    versao = int(info.get("versao_features", 1))
+    if versao not in VERSOES_SUPORTADAS:
+        raise ErroClassificador(f"o modelo usa features v{versao}, que esta versão do projeto não "
+                                f"conhece (suportadas: {VERSOES_SUPORTADAS}); treine novamente")
+    esperado = {"t_frames": config.T_FRAMES, "tam_features": tamanho_vetor(versao)}
     diferencas = [f"{k}: modelo={info.get(k)}, config={v}" for k, v in esperado.items() if info.get(k) != v]
     if diferencas:
         raise ErroClassificador("o modelo foi treinado com outras features ("

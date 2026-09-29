@@ -32,7 +32,8 @@ def test_layout_dos_landmarks():
     assert config.TAM_FRAME_BRUTO == 228
     assert config.COL_POSE.stop == config.TAM_FRAME_BRUTO
     assert config.TAM_FEATURES_FRAME == 132
-    assert config.TAM_FEATURES_JANELA == config.T_FRAMES * 132
+    assert config.TAM_FEATURES_POSICIONAIS == config.T_FRAMES * 132
+    assert config.TAM_FEATURES_JANELA == config.TAM_FEATURES_POSICIONAIS + config.TAM_MOVIMENTO
 
 
 def test_limiares_validos():

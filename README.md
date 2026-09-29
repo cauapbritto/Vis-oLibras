@@ -139,6 +139,20 @@ Parâmetros de estabilidade (em `config.py` ou pela linha de comando):
 | `PASSO_INFERENCIA` | 5 | `--passo` | menos CPU, reação mais lenta | reage mais rápido, mais CPU |
 | `PAUSA_FRASE_S` | 2.5 | — | frases mais longas | encerra a frase mais cedo |
 
+## Sinais com movimento (features versão 2)
+
+Cada previsão usa uma janela de 1,5 s. Desde a versão 2 das features, além da forma e da
+posição das mãos em cada frame, o vetor traz características de movimento (velocidade,
+trajetória, mudanças de direção, abertura da mão, distância entre as mãos). Sinais
+estáticos continuam funcionando; modelos antigos (v1) também.
+
+```bash
+python scripts/comparar_features.py   # v1 x v2 no seu dataset, por sinal
+python scripts/treinar_modelo.py      # reconstrói o dataset.npz na versão atual
+```
+
+Detalhes e justificativa: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 7.3.
+
 ## Configuração
 
 Todas as configurações ficam em [`src/libras/config.py`](src/libras/config.py): câmera,

@@ -180,8 +180,15 @@ LIMIAR_OUTLIER = 3.5             # desvios (MAD) acima da mediana da classe
 # Pré-processamento (features)
 # =============================================================================
 
-T_FRAMES = 20        # quantidade de frames após a reamostragem de cada janela
-VERSAO_FEATURES = 1  # incrementar sempre que o pré-processamento mudar
+T_FRAMES = 20  # quantidade de frames após a reamostragem de cada janela
+
+# Versão das features. Incrementar sempre que o pré-processamento mudar.
+#   1: janela posicional (forma + posição de cada mão em cada um dos T frames)
+#   2: versão 1 + características de movimento (velocidade, trajetória,
+#      direção, abertura da mão, distância entre as mãos) - ver temporal.py
+# Modelos treinados na versão 1 continuam funcionando: o tempo real usa a
+# versão gravada no modelo, não a daqui.
+VERSAO_FEATURES = 2
 
 # Vetor por frame, para cada mão (direita, depois esquerda):
 #   forma (63): pontos relativos ao punho, divididos pelo tamanho da palma
@@ -192,7 +199,19 @@ VERSAO_FEATURES = 1  # incrementar sempre que o pré-processamento mudar
 TAM_FORMA_MAO = TAM_MAO   # 63
 TAM_POSICAO_MAO = 2       # x, y
 TAM_FEATURES_FRAME = 2 * (TAM_FORMA_MAO + TAM_POSICAO_MAO) + 2  # 132
-TAM_FEATURES_JANELA = T_FRAMES * TAM_FEATURES_FRAME             # 2640
+TAM_FEATURES_POSICIONAIS = T_FRAMES * TAM_FEATURES_FRAME         # 2640 (versão 1)
+
+# Características de movimento (versão 2), por mão:
+#   velocidade do punho entre frames (2 x (T-1)), deslocamento total (2),
+#   comprimento da trajetória (1), amplitude x/y (2), mudanças de direção x/y (2),
+#   abertura da mão em cada frame (T) e sua variação (1)  -> 3T + 6
+# e a distância entre os punhos em cada frame (T).
+TAM_MOVIMENTO_MAO = 3 * T_FRAMES + 6                   # 66
+TAM_MOVIMENTO = 2 * TAM_MOVIMENTO_MAO + T_FRAMES       # 152
+TAM_FEATURES_JANELA = TAM_FEATURES_POSICIONAIS + TAM_MOVIMENTO  # 2792 (versão atual)
+
+LIMIAR_MOVIMENTO = 0.02  # velocidade mínima (larguras de ombro por frame) para contar direção
+PONTAS_DEDOS = (4, 8, 12, 16, 20)  # polegar, indicador, médio, anelar, mínimo
 
 # Pontos da mão usados como referência de tamanho (punho -> base do dedo médio)
 MAO_PUNHO = 0

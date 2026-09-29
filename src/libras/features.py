@@ -4,6 +4,10 @@ A MESMA função `janela_para_vetor()` é usada na análise do dataset, no trein
 no reconhecimento em tempo real. Mudou algo aqui? Incremente
 config.VERSAO_FEATURES e retreine o modelo.
 
+Versões do vetor (o modelo salvo registra a sua; o tempo real usa a do modelo):
+  1: janela posicional - T frames x (forma + posição de cada mão + flags)
+  2: versão 1 + características de movimento (temporal.py), concatenadas no fim
+
 Normalização (para cada mão presente em cada frame):
 
 1. **Forma** (63 valores): pontos relativos ao punho, divididos pelo tamanho da
@@ -22,6 +26,9 @@ from __future__ import annotations
 import numpy as np
 
 from libras import config
+from libras.temporal import SequenciaTemporal, caracteristicas_movimento
+
+VERSOES_SUPORTADAS = (1, 2)
 
 _COL_FLAG = {  # coluna da flag de presença de cada mão na linha crua
     "direita": config.COL_FLAGS.start,
@@ -110,8 +117,18 @@ def indices_reamostragem(tempos: np.ndarray, t_frames: int = config.T_FRAMES) ->
     return np.abs(tempos[None, :] - alvos[:, None]).argmin(axis=1)
 
 
-def janela_para_vetor(frames: np.ndarray) -> np.ndarray:
-    """(F, config.TAM_FRAME_BRUTO) landmarks crus -> config.TAM_FEATURES_JANELA valores.
+def tamanho_vetor(versao: int = config.VERSAO_FEATURES) -> int:
+    if versao == 1:
+        return config.TAM_FEATURES_POSICIONAIS
+    if versao == 2:
+        return config.TAM_FEATURES_POSICIONAIS + config.TAM_MOVIMENTO
+    raise ValueError(f"versão de features desconhecida: {versao} (suportadas: {VERSOES_SUPORTADAS})")
+
+
+def sequencia_normalizada(frames: np.ndarray) -> np.ndarray:
+    """(F, config.TAM_FRAME_BRUTO) landmarks crus -> (T, config.TAM_FEATURES_FRAME):
+    falhas curtas preenchidas, cada frame normalizado e T frames igualmente
+    espaçados no tempo.
 
     Lança ErroJanela se a janela não tem frames suficientes ou se os ombros não
     aparecem em nenhum frame.
@@ -133,7 +150,17 @@ def janela_para_vetor(frames: np.ndarray) -> np.ndarray:
 
     frames = preencher_lacunas_maos(frames)
     indices = indices_reamostragem(frames[:, config.COL_TIMESTAMP])
-    vetor = np.concatenate([normalizar_frame(frames[i], referencias[i]) for i in indices])
+    return np.stack([normalizar_frame(frames[i], referencias[i]) for i in indices])
+
+
+def janela_para_vetor(frames: np.ndarray, versao: int = config.VERSAO_FEATURES) -> np.ndarray:
+    """(F, config.TAM_FRAME_BRUTO) landmarks crus -> vetor com tamanho_vetor(versao) valores."""
+    tamanho_vetor(versao)  # valida a versão
+    sequencia = sequencia_normalizada(frames)
+    partes = [sequencia.ravel()]
+    if versao >= 2:
+        partes.append(caracteristicas_movimento(sequencia))
+    vetor = np.concatenate(partes)
     if not np.isfinite(vetor).all():
         raise ErroJanela("o vetor contém valores inválidos (NaN/infinito)")
     return vetor
@@ -143,46 +170,10 @@ def janela_para_vetor(frames: np.ndarray) -> np.ndarray:
 # Buffer do tempo real
 # -----------------------------------------------------------------------------
 
-class BufferJanela:
-    """Guarda as linhas cruas dos últimos `duracao` segundos (janela deslizante).
-    `vetor()` aplica exatamente o mesmo pré-processamento das amostras gravadas."""
+class BufferJanela(SequenciaTemporal):
+    """Sequência temporal do tempo real que também sabe gerar o vetor de features
+    (mantida com este nome por compatibilidade com o código da Fase 4)."""
 
-    def __init__(self, duracao: float = config.DURACAO_JANELA,
-                 duracao_minima: float = config.DURACAO_MINIMA_JANELA) -> None:
-        self.duracao = duracao
-        self.duracao_minima = duracao_minima
-        self._linhas: list[np.ndarray] = []
-
-    def adicionar(self, linha: np.ndarray) -> None:
-        self._linhas.append(linha)
-        limite = linha[config.COL_TIMESTAMP] - self.duracao
-        while self._linhas and self._linhas[0][config.COL_TIMESTAMP] < limite:
-            self._linhas.pop(0)
-
-    def limpar(self) -> None:
-        self._linhas.clear()
-
-    def __len__(self) -> int:
-        return len(self._linhas)
-
-    @property
-    def duracao_atual(self) -> float:
-        if len(self._linhas) < 2:
-            return 0.0
-        return float(self._linhas[-1][config.COL_TIMESTAMP] - self._linhas[0][config.COL_TIMESTAMP])
-
-    def pronta(self) -> bool:
-        """Já tem tempo suficiente para classificar?"""
-        return self.duracao_atual >= self.duracao_minima
-
-    def pct_com_maos(self) -> float:
-        if not self._linhas:
-            return 0.0
-        flags = np.stack([l[config.COL_FLAGS] for l in self._linhas])
-        return float((flags.max(axis=1) > 0.5).mean())
-
-    def vetor(self) -> np.ndarray:
-        """Vetor de features da janela atual (timestamps relativos, como nas amostras)."""
-        frames = np.stack(self._linhas)
-        frames[:, config.COL_TIMESTAMP] -= frames[0, config.COL_TIMESTAMP]
-        return janela_para_vetor(frames)
+    def vetor(self, versao: int = config.VERSAO_FEATURES) -> np.ndarray:
+        """Vetor de features da janela atual, com o mesmo pré-processamento das amostras."""
+        return janela_para_vetor(self.como_array(), versao)

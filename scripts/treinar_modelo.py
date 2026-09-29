@@ -174,8 +174,8 @@ def main() -> int:
 
     # 1. Carregar e validar
     try:
-        if args.reconstruir or not config.ARQ_DATASET.is_file():
-            print("Construindo dataset.npz a partir de data/raw ...")
+        if args.reconstruir or dataset.precisa_reconstruir():
+            print(f"Construindo dataset.npz (features v{config.VERSAO_FEATURES}) a partir de data/raw ...")
             dados, _ = dataset.construir_dados_treino()
             dataset.salvar_dados_treino(dados)
         dados = dataset.carregar_dados_treino()
@@ -188,7 +188,8 @@ def main() -> int:
     mostrar("=" * 64)
     mostrar(f"TREINAMENTO - {datetime.now():%d/%m/%Y %H:%M}")
     mostrar("=" * 64)
-    mostrar(f"Dataset: {len(dados.y)} amostras, {len(classes)} classes, {dados.X.shape[1]} features, "
+    mostrar(f"Dataset: {len(dados.y)} amostras, {len(classes)} classes, {dados.X.shape[1]} features "
+            f"(versão {config.VERSAO_FEATURES}), "
             f"pessoas: {', '.join(sorted(set(dados.pessoas)))}")
     ausentes = [c for c in config.CLASSES if c not in contagem]
     if ausentes:

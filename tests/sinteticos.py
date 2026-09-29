@@ -65,3 +65,13 @@ def transformar(frames: np.ndarray, deslocamento=(0.0, 0.0), escala=1.0) -> np.n
         presente = np.abs(pts).sum(axis=2, keepdims=True) > 0
         frames[:, col] = np.where(presente, pts * escala + desl, 0).reshape(len(frames), -1)
     return frames
+
+
+def aceno(ciclos: float = 2.0, amplitude: float = 0.06, centro=(0.70, 0.62), n_frames: int = 45,
+          duracao: float = 1.5, fase: float = 0.0) -> np.ndarray:
+    """Mão direita indo e voltando na horizontal (sinal com movimento)."""
+    frames = []
+    for t in np.linspace(0, duracao, n_frames):
+        x = centro[0] + amplitude * np.sin(2 * np.pi * ciclos * t / duracao + fase)
+        frames.append(linha(t, direita=mao((x, centro[1]))))
+    return np.stack(frames)

@@ -117,6 +117,7 @@ Vis-oLibras/
 │       ├── camera.py            # abrir webcam, ler frame, espelhar, liberar
 │       ├── extrator.py          # MediaPipe: frame → landmarks crus (mãos + pose)
 │       ├── features.py          # normalização, vetor por frame, buffer, reamostragem
+│       ├── temporal.py          # sequência dos últimos segundos + características de movimento
 │       ├── dataset.py           # gravar, ler, validar e analisar amostras (regras únicas)
 │       ├── classificador.py     # carregar modelo, prever (sinal, confiança)
 │       ├── estabilizador.py     # regras anti-repetição (máquina de estados)
@@ -133,6 +134,7 @@ Vis-oLibras/
 │   ├── analisar_dataset.py      # valida o dataset: contagens, inválidas, inconsistências, gráficos
 │   ├── construir_dataset.py     # data/raw → data/processed/dataset.npz
 │   ├── treinar_modelo.py        # treina e salva o modelo
+│   ├── comparar_features.py     # compara features v1 (posição) x v2 (+ movimento) no seu dataset
 │   ├── avaliar_modelo.py        # relatório de precisão + matriz de confusão
 │   └── executar.py              # aplicação em tempo real
 │
@@ -387,7 +389,8 @@ Para **cada amostra/janela**:
 6. **Reamostragem temporal** para **T = 20 frames** igualmente espaçados no tempo (frame
    mais próximo de cada instante — evita misturar um frame com mão e outro sem). Torna o
    sistema independente do FPS da máquina.
-7. **Achatar** → vetor de 20 × 132 = **2.640 features**.
+7. **Achatar** → vetor de 20 × 132 = **2.640 features** (versão 1).
+8. **Versão 2 (atual):** + **152 características de movimento** (seção 7.3) → **2.792 features**.
 
 Função única: `features.janela_para_vetor(frames_brutos) -> np.ndarray`. **Treino e tempo
 real chamam exatamente a mesma função** — isso evita o erro mais comum desse tipo de
@@ -419,6 +422,57 @@ projeto.
 
 Relatório completo em `reports/classification_report.txt`. Tempo de treino: menos de
 1 minuto para ~350 amostras em notebook comum.
+
+### 7.3 Sinais com movimento (features versão 2)
+
+**Limitação:** o sistema nunca classificou frames isolados — cada previsão usa uma janela de
+1,5 s (20 frames). Mas, na versão 1, o movimento fica *implícito*: o modelo recebe 20
+posições soltas e precisa descobrir sozinho que elas formam um aceno. Dos 2.640 números,
+2.520 descrevem a forma da mão e só 80 a trajetória; com poucas amostras, o movimento se
+perde. Além disso, no tempo real a janela desliza e o aceno aparece em fases diferentes das
+amostras gravadas.
+
+**Opções avaliadas:**
+
+| Abordagem | Diferencia movimento? | Dados necessários | Complexidade | Decisão |
+|---|---|---|---|---|
+| Frame isolado | não | poucos | baixa | — (nunca usamos) |
+| Janela posicional (v1) | implicitamente | muitos | baixa | mantida como base |
+| **Janela + características de movimento (v2)** | **sim, explicitamente** | **poucos** | **baixa** | **escolhida** |
+| LSTM/GRU | sim | muitos (centenas por sinal) | alta (TensorFlow, ajuste) | só se necessário |
+
+Protótipo com 5 classes que só diferem pelo movimento (parado, aceno, círculo, sobe,
+desce), mesma forma de mão e posição, com variação de velocidade e fase: com 20 amostras
+por classe, **v1 = 85 %** e **v2 = 99 %**; com 40, 98,5 % × 100 %. A v1 aprende o
+movimento, mas precisa do dobro de dados.
+
+**Características de movimento** (`temporal.caracteristicas_movimento`, calculadas sobre a
+sequência já normalizada, então continuam invariantes à posição, distância e tamanho):
+
+| Por mão | O que captura |
+|---|---|
+| velocidade do punho entre frames (2 × 19) | direção e ritmo |
+| deslocamento total (2) | sobe × desce |
+| comprimento da trajetória (1) | parado × em movimento |
+| amplitude em x e y (2) | tamanho do movimento |
+| mudanças de direção em x e y (2, com suavização e limiar) | aceno, vai-e-vem |
+| abertura da mão em cada frame (20) e variação (1) | abrir / fechar a mão |
+| **entre as mãos:** distância entre os punhos (20) | aproximar / afastar |
+
+Sinais estáticos continuam funcionando: as features da v1 estão todas lá, e o movimento
+perto de zero passa a ser uma pista a mais ("este sinal é parado").
+
+**Compatibilidade:** os dados brutos não mudam (nada precisa ser regravado); o vetor v2 é o
+v1 com o bloco de movimento no fim; o modelo salvo registra sua versão e o tempo real gera o
+vetor **na versão do modelo** — um modelo v1 continua funcionando. `treinar_modelo.py`
+reconstrói o `dataset.npz` automaticamente quando a versão muda.
+
+**Quando partir para LSTM/GRU:** muitos sinais dinâmicos com mesma forma e trajetória
+parecida (diferença só na ordem fina do movimento), sinais de duração muito variável (> 2 s),
+vocabulário > 30 sinais e > 100 amostras por sinal — e só se `comparar_features.py` e a
+matriz de confusão mostrarem que a v2 não resolve. A interface `Classificador.prever(vetor)`
+permite trocar o modelo sem mexer no resto (a sequência T × 132 já existe em
+`features.sequencia_normalizada`).
 
 ---
 

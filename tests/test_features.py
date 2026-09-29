@@ -7,6 +7,19 @@ from libras.features import (ErroJanela, forma_mao, indices_reamostragem, janela
 from sinteticos import MAO_BASE, amostra, linha, mao, transformar
 
 
+def test_versao_1_e_o_inicio_da_versao_2():
+    frames = amostra(esquerda=True)
+    v1, v2 = janela_para_vetor(frames, versao=1), janela_para_vetor(frames, versao=2)
+    assert v1.shape == (config.TAM_FEATURES_POSICIONAIS,)
+    assert v2.shape == (config.TAM_FEATURES_POSICIONAIS + config.TAM_MOVIMENTO,)
+    np.testing.assert_array_equal(v2[:v1.size], v1)
+
+
+def test_versao_desconhecida_gera_erro():
+    with pytest.raises(ValueError):
+        janela_para_vetor(amostra(), versao=99)
+
+
 def test_vetor_tem_sempre_o_mesmo_tamanho():
     for n_frames in (20, 45, 90):  # câmeras de ~13, 30 e 60 fps
         assert janela_para_vetor(amostra(n_frames=n_frames)).shape == (config.TAM_FEATURES_JANELA,)
@@ -47,7 +60,7 @@ def test_formato_da_mao_importa():
 
 
 def test_mao_ausente_vira_zeros_com_flag_zero():
-    vetor = janela_para_vetor(amostra(esquerda=False)).reshape(config.T_FRAMES, config.TAM_FEATURES_FRAME)
+    vetor = janela_para_vetor(amostra(esquerda=False), versao=1).reshape(config.T_FRAMES, config.TAM_FEATURES_FRAME)
     bloco = config.TAM_FORMA_MAO + config.TAM_POSICAO_MAO
     assert vetor[:, :bloco].any()                       # direita presente
     assert not vetor[:, bloco:2 * bloco].any()          # esquerda = zeros
