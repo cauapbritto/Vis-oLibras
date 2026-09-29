@@ -17,8 +17,8 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
 | 0 | Estrutura do projeto e configuração | ✅ concluída |
 | 1 | Câmera + MediaPipe desenhando landmarks | ✅ concluída |
 | 2 | Coleta de dados e análise do dataset | ✅ concluída |
-| 3 | Dataset, treino e avaliação | ⏳ próxima |
-| 4 | Reconhecimento em tempo real | — |
+| 3 | Dataset, treino e avaliação | ✅ concluída |
+| 4 | Reconhecimento em tempo real | ⏳ próxima |
 | 5 | Anti-repetição e frases | — |
 | 6 | Voz | — |
 | 7 | Avaliação final | — |
@@ -104,6 +104,18 @@ landmarks (`data/raw/<SINAL>/*.npy`), sem imagens. Antes de gravar, preencha
 
 Meta para o protótipo: **40 amostras por sinal por pessoa, com 3 pessoas ou mais**
 (≥ 120 por sinal) e o dobro para `_NADA`.
+
+## Fase 3 — treinar o modelo
+
+```bash
+python scripts/construir_dataset.py     # data/raw -> data/processed/dataset.npz
+python scripts/treinar_modelo.py        # compara RF, SVM e MLP e salva o melhor
+python scripts/treinar_modelo.py --modelo rf --reconstruir
+```
+
+Saídas: `models/classificador.joblib`, `models/classes.json`,
+`models/classificador_info.json`, `reports/classification_report.txt` e
+`reports/matriz_confusao.png`.
 
 ## Configuração
 

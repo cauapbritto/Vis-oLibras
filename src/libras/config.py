@@ -32,6 +32,7 @@ ARQ_DATASET = DIR_PROCESSED / "dataset.npz"  # X, y, pessoa (gerado)
 DIR_MODELOS = RAIZ_PROJETO / "models"
 ARQ_MODELO = DIR_MODELOS / "classificador.joblib"
 ARQ_MODELO_INFO = DIR_MODELOS / "classificador_info.json"
+ARQ_CLASSES = DIR_MODELOS / "classes.json"  # rótulos na ordem das saídas do modelo
 ARQ_HAND_LANDMARKER = DIR_MODELOS / "hand_landmarker.task"
 ARQ_POSE_LANDMARKER = DIR_MODELOS / "pose_landmarker_lite.task"
 
@@ -205,9 +206,10 @@ MAX_LACUNA_MAO = 3         # frames seguidos sem uma mão que são interpolados
 # Treinamento
 # =============================================================================
 
-SEMENTE = 42                   # reprodutibilidade
-FRACAO_PESSOAS_TESTE = 0.25    # fração de pessoas separadas só para teste
-N_ARVORES = 300                # RandomForest (modelo padrão do MVP)
+SEMENTE = 42          # random_state: mesmos dados + mesma semente = mesmo resultado
+FRACAO_TESTE = 0.25   # fração das amostras separada para teste (estratificada por sinal)
+N_FOLDS_CV = 5        # validação cruzada no treino para escolher o algoritmo
+N_ARVORES = 300       # Random Forest
 
 # =============================================================================
 # Reconhecimento em tempo real

@@ -394,21 +394,30 @@ projeto.
 
 ### 7.2 Script `treinar_modelo.py`
 
-1. Carrega `dataset.npz`.
-2. Divide treino/teste **por pessoa** (`GroupShuffleSplit` ou uma pessoa separada só para
-   teste). Dividir aleatoriamente por amostra infla a acurácia, porque amostras da mesma
-   pessoa ficam muito parecidas.
-3. Treina e compara 3 candidatos, todos com `Pipeline` do scikit-learn:
-   - `RandomForestClassifier(n_estimators=300)` — **padrão do MVP**
-   - `StandardScaler` + `SVC(kernel="rbf", probability=True)`
+1. Carrega `dataset.npz` (gerado por `construir_dataset.py`, ou na hora com
+   `--reconstruir`) e **valida**: versão das features, formato de X, NaN, rótulos
+   conhecidos, pelo menos 2 classes e 2 amostras por classe.
+2. Separa **treino (75 %) e teste (25 %) de forma estratificada** (mesma proporção de cada
+   sinal nos dois), com `random_state = SEMENTE`.
+3. Compara 3 candidatos, todos com `Pipeline` do scikit-learn, por **validação cruzada
+   estratificada (5 folds) só no treino**, usando F1 macro:
+   - `RandomForestClassifier(n_estimators=300, class_weight="balanced")`
+   - `StandardScaler` + SVM RBF (`CalibratedClassifierCV` para dar a confiança)
    - `StandardScaler` + `MLPClassifier(hidden_layer_sizes=(256, 128))`
-4. Escolhe o de melhor **F1 macro** na validação por pessoa.
-5. Retreina o escolhido com **todos** os dados e salva:
-   - `models/classificador.joblib`
-   - `models/classificador_info.json` (classes, T, DURACAO_JANELA, versão das features,
-     métricas, data). O `executar.py` confere se os parâmetros batem com o `config.py`.
+4. Avalia o escolhido no teste: accuracy, precision/recall/F1 por classe, **matriz de
+   confusão** (`reports/matriz_confusao.png`), sinais confundidos e tempo de uma previsão.
+5. Com 2+ pessoas, **testa com pessoas novas** (treina sem uma pessoa e testa nela) — a
+   separação estratificada mistura amostras da mesma pessoa no treino e no teste e por isso
+   é otimista; este teste é a estimativa realista.
+6. Retreina o escolhido com **todas** as amostras e salva (`classificador.py`):
+   - `models/classificador.joblib` (Pipeline, já em modo de 1 núcleo para previsões rápidas)
+   - `models/classes.json` (rótulos na ordem das saídas do modelo)
+   - `models/classificador_info.json` (algoritmo, parâmetros, `random_state`, divisão,
+     comparação, métricas, confusões, versões das bibliotecas e parâmetros das features).
+     Ao carregar, `carregar_classificador()` recusa um modelo treinado com outras features.
 
-Tempo de treino esperado: poucos segundos a 1 minuto em notebook comum.
+Relatório completo em `reports/classification_report.txt`. Tempo de treino: menos de
+1 minuto para ~350 amostras em notebook comum.
 
 ---
 

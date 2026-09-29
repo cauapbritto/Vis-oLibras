@@ -5,17 +5,6 @@ from libras import config, dataset
 from sinteticos import amostra, linha, mao
 
 
-@pytest.fixture
-def dataset_vazio(tmp_path, monkeypatch):
-    """Redireciona data/ para uma pasta temporária."""
-    monkeypatch.setattr(config, "DIR_DATA", tmp_path)
-    monkeypatch.setattr(config, "DIR_RAW", tmp_path / "raw")
-    monkeypatch.setattr(config, "ARQ_METADATA", tmp_path / "metadata.csv")
-    for classe in config.CLASSES:
-        (tmp_path / "raw" / classe).mkdir(parents=True)
-    return tmp_path
-
-
 def test_amostra_valida():
     assert dataset.validar_amostra(amostra(), "OI") == []
 
@@ -112,3 +101,38 @@ def test_analise_encontra_problemas(dataset_vazio):
     motivos = " ".join(m for _, m in rel.alertas)
     assert "ambas" in motivos
     assert "muito diferente" in motivos
+
+
+def test_construir_salvar_e_carregar_dados_treino(dataset_vazio):
+    _popular(4)
+    dataset.salvar_amostra(np.stack([linha(t) for t in np.linspace(0, 1.5, 45)]), "OI", "ana")  # inválida
+    dados, invalidas = dataset.construir_dados_treino()
+    assert dados.X.shape == (8, config.TAM_FEATURES_JANELA)
+    assert len(invalidas) == 1
+    dataset.salvar_dados_treino(dados)
+    carregados = dataset.carregar_dados_treino()
+    np.testing.assert_array_equal(carregados.X, dados.X)
+    assert list(carregados.y) == list(dados.y)
+    assert set(carregados.pessoas) == {"ana", "bia"}
+
+
+def test_dados_treino_de_outra_versao_sao_recusados(dataset_vazio, monkeypatch):
+    _popular(4)
+    dataset.salvar_dados_treino(dataset.construir_dados_treino()[0])
+    monkeypatch.setattr(config, "VERSAO_FEATURES", config.VERSAO_FEATURES + 1)
+    with pytest.raises(dataset.ErroDataset, match="construir_dataset"):
+        dataset.carregar_dados_treino()
+
+
+def test_validar_dados_treino():
+    X = np.zeros((3, config.TAM_FEATURES_JANELA), dtype=np.float32)
+    dados = dataset.DadosTreino(X, np.array(["OI", "OI", "CASA"]), np.array(["a"] * 3), np.array(["x"] * 3))
+    problemas = " ".join(dataset.validar_dados_treino(dados))
+    assert "CASA" in problemas and "menos de 2 amostras" in problemas
+    X[0, 0] = np.nan
+    assert any("NaN" in p for p in dataset.validar_dados_treino(dados))
+
+
+def test_sem_amostras_validas(dataset_vazio):
+    with pytest.raises(dataset.ErroDataset, match="nenhuma amostra"):
+        dataset.construir_dados_treino()

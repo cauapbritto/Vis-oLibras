@@ -285,11 +285,13 @@ def _similaridade_classes(relatorio: RelatorioDataset) -> tuple[list[str], np.nd
     return classes, unitarios @ unitarios.T
 
 
-def analisar_dataset() -> RelatorioDataset:
-    inconsistencias: list[str] = []
-    alertas: list[tuple[str, str]] = []
-    _verificar_organizacao(inconsistencias)
+def ler_amostras() -> list[Amostra]:
+    """Lê e valida todas as amostras das classes de config.CLASSES.
 
+    Cada amostra válida já vem com o vetor de features (janela_para_vetor), o
+    mesmo usado no tempo real. Arquivos ilegíveis e duplicatas são marcados como
+    inválidos. Usado pela análise do dataset e pela montagem do dataset de treino.
+    """
     amostras: list[Amostra] = []
     hashes: dict[str, str] = {}
     for caminho in listar_amostras():
@@ -314,6 +316,14 @@ def analisar_dataset() -> RelatorioDataset:
         if amostra.valida:
             amostra.perfil = perfil_maos(estatisticas_amostra(frames))
             amostra.vetor = janela_para_vetor(frames)
+    return amostras
+
+
+def analisar_dataset() -> RelatorioDataset:
+    inconsistencias: list[str] = []
+    alertas: list[tuple[str, str]] = []
+    _verificar_organizacao(inconsistencias)
+    amostras = ler_amostras()
 
     relatorio = RelatorioDataset(amostras, inconsistencias, alertas,
                                  {a.vetor.size for a in amostras if a.vetor is not None}, None)
@@ -365,3 +375,82 @@ def por_pessoa(relatorio: RelatorioDataset) -> dict[str, dict[str, int]]:
         for pessoa, n in relatorio.pessoas(classe).items():
             tabela[pessoa][classe] = n
     return dict(tabela)
+
+
+# -----------------------------------------------------------------------------
+# Dataset de treino (data/processed/dataset.npz)
+# -----------------------------------------------------------------------------
+
+class ErroDataset(ValueError):
+    """dataset.npz ausente, desatualizado ou com dados inconsistentes."""
+
+
+@dataclass
+class DadosTreino:
+    X: np.ndarray         # (n_amostras, config.TAM_FEATURES_JANELA)
+    y: np.ndarray         # rótulos (identificadores dos sinais)
+    pessoas: np.ndarray   # quem gravou cada amostra (para testar com pessoas novas)
+    arquivos: np.ndarray  # origem de cada linha, relativa a data/
+
+
+def construir_dados_treino() -> tuple[DadosTreino, list[Amostra]]:
+    """Monta X/y com as amostras válidas. Devolve também as inválidas (ignoradas)."""
+    amostras = ler_amostras()
+    validas = [a for a in amostras if a.valida]
+    if not validas:
+        raise ErroDataset(f"nenhuma amostra válida em {config.DIR_RAW}; grave amostras com coletar_dados.py")
+    dados = DadosTreino(
+        X=np.stack([a.vetor for a in validas]).astype(np.float32),
+        y=np.array([a.sinal for a in validas]),
+        pessoas=np.array([a.pessoa for a in validas]),
+        arquivos=np.array([a.arquivo for a in validas]),
+    )
+    return dados, [a for a in amostras if not a.valida]
+
+
+def salvar_dados_treino(dados: DadosTreino) -> None:
+    config.ARQ_DATASET.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        config.ARQ_DATASET, X=dados.X, y=dados.y, pessoas=dados.pessoas, arquivos=dados.arquivos,
+        versao_features=config.VERSAO_FEATURES, t_frames=config.T_FRAMES,
+    )
+
+
+def carregar_dados_treino() -> DadosTreino:
+    """Carrega e VALIDA o dataset.npz (versão das features, formato e rótulos)."""
+    if not config.ARQ_DATASET.is_file():
+        raise ErroDataset(f"{config.ARQ_DATASET} não existe; rode scripts/construir_dataset.py")
+    with np.load(config.ARQ_DATASET, allow_pickle=False) as arquivo:
+        versao, t_frames = int(arquivo["versao_features"]), int(arquivo["t_frames"])
+        dados = DadosTreino(arquivo["X"], arquivo["y"], arquivo["pessoas"], arquivo["arquivos"])
+
+    if versao != config.VERSAO_FEATURES or t_frames != config.T_FRAMES:
+        raise ErroDataset(
+            f"dataset.npz foi gerado com features v{versao}/T={t_frames}, mas o config.py usa "
+            f"v{config.VERSAO_FEATURES}/T={config.T_FRAMES}; rode scripts/construir_dataset.py")
+    problemas = validar_dados_treino(dados)
+    if problemas:
+        raise ErroDataset("dataset.npz inválido:\n  - " + "\n  - ".join(problemas))
+    return dados
+
+
+def validar_dados_treino(dados: DadosTreino) -> list[str]:
+    """Problemas que impedem o treino (lista vazia = pode treinar)."""
+    problemas = []
+    n = len(dados.y)
+    if dados.X.ndim != 2 or dados.X.shape != (n, config.TAM_FEATURES_JANELA):
+        problemas.append(f"X tem formato {dados.X.shape}, esperado ({n}, {config.TAM_FEATURES_JANELA})")
+    if not (len(dados.pessoas) == len(dados.arquivos) == n):
+        problemas.append("X, y, pessoas e arquivos têm quantidades diferentes")
+    if dados.X.size and not np.isfinite(dados.X).all():
+        problemas.append("X contém NaN ou infinito")
+    desconhecidas = sorted(set(dados.y) - set(config.CLASSES))
+    if desconhecidas:
+        problemas.append(f"rótulos fora de config.CLASSES: {desconhecidas}")
+    contagem = Counter(dados.y)
+    if len(contagem) < 2:
+        problemas.append("são necessárias pelo menos 2 classes")
+    poucas = sorted(c for c, q in contagem.items() if q < 2)
+    if poucas:
+        problemas.append(f"classes com menos de 2 amostras (impossível estratificar): {poucas}")
+    return problemas
