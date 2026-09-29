@@ -5,11 +5,14 @@ calculados por features.janela_para_vetor() - a mesma função do tempo real.
 Amostras inválidas (as mesmas regras do coletor) são ignoradas e listadas.
 
 Uso:
-    python scripts/construir_dataset.py
+    python scripts/desenvolvimento/construir_dataset.py
 """
 
 import sys
 from collections import Counter
+
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config, dataset
 
@@ -29,7 +32,7 @@ def main() -> int:
     for classe in config.CLASSES:
         print(f"  {config.rotulo_exibicao(classe):<10} {contagem.get(classe, 0):>5}")
     if invalidas:
-        print(f"  {len(invalidas)} amostras inválidas ignoradas (detalhes: scripts/analisar_dataset.py)")
+        print(f"  {len(invalidas)} amostras inválidas ignoradas (detalhes: scripts/desenvolvimento/analisar_dataset.py)")
 
     problemas = dataset.validar_dados_treino(dados)
     for problema in problemas:

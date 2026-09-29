@@ -5,14 +5,17 @@ sinal confirmado, a sequência de palavras e a frase final, com botões para
 iniciar/parar a câmera, finalizar, limpar, remover a última palavra e falar.
 
 Uso:
-    python scripts/app.py
-    python scripts/app.py --camera 1 --tema claro
+    python scripts/demonstracao/app.py
+    python scripts/demonstracao/app.py --camera 1 --tema claro
 
-Para a versão simples em janela do OpenCV: python scripts/executar.py
+Para a versão simples em janela do OpenCV: python scripts/demonstracao/executar.py
 """
 
 import argparse
 import sys
+
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config
 

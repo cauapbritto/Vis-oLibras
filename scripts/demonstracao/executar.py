@@ -1,12 +1,12 @@
 """Aplicação em tempo real em janela do OpenCV: câmera -> reconhecimento -> texto -> voz.
-(Versão simples; a interface gráfica de demonstração é o scripts/app.py.)
+(Versão simples; a interface gráfica de demonstração é o scripts/demonstracao/app.py.)
 
 Webcam -> OpenCV -> MediaPipe -> landmarks -> mesmo pré-processamento do treino
 -> modelo treinado -> estabilizador (anti-repetição) -> sequência de palavras.
 
 Uso:
-    python scripts/executar.py
-    python scripts/executar.py --limiar 0.6 --consecutivas 4 --cooldown 1.5
+    python scripts/demonstracao/executar.py
+    python scripts/demonstracao/executar.py --limiar 0.6 --consecutivas 4 --cooldown 1.5
 
 Teclas:
     C          limpa a sequência atual
@@ -20,6 +20,9 @@ import sys
 import time
 
 import cv2
+
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config
 from libras.camera import Camera, ErroCamera

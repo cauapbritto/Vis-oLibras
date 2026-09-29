@@ -7,7 +7,7 @@ e mostra accuracy, F1 macro e o F1 de cada sinal, lado a lado. Útil para
 decidir se o movimento ajuda e para mostrar na apresentação.
 
 Uso:
-    python scripts/comparar_features.py
+    python scripts/desenvolvimento/comparar_features.py
 """
 
 import sys
@@ -17,6 +17,9 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
+
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config, dataset
 from libras.features import janela_para_vetor

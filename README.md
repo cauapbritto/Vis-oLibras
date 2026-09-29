@@ -3,131 +3,90 @@
 **Tradução de Libras para Texto e Voz utilizando Visão Computacional e Inteligência Artificial**
 
 Protótipo acadêmico que usa a webcam para reconhecer, em tempo real, um vocabulário
-pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
+pequeno de sinais de Libras, montar a sequência de palavras e falar a frase.
 
 - **Vocabulário inicial (MVP):** OI, EU, MEU, NOME, BOM, DIA, OBRIGADO, SIM, NÃO, AJUDA
-- **Tecnologias:** Python · OpenCV · MediaPipe · NumPy · scikit-learn · pyttsx3 — tudo
-  gratuito e executado localmente
+- **Tecnologias:** Python · OpenCV · MediaPipe · NumPy · scikit-learn · pyttsx3 ·
+  CustomTkinter — tudo gratuito e executado localmente (offline)
 - **Plano técnico completo:** [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 
-## Status
+## Dois modos
 
-| Fase | Descrição | Situação |
+| | **Modo usuário / demonstração** | **Modo desenvolvimento / treinamento** |
 |---|---|---|
-| 0 | Estrutura do projeto e configuração | ✅ concluída |
-| 1 | Câmera + MediaPipe desenhando landmarks | ✅ concluída |
-| 2 | Coleta de dados e análise do dataset | ✅ concluída |
-| 3 | Dataset, treino e avaliação | ✅ concluída |
-| 4 | Reconhecimento em tempo real | ✅ concluída |
-| 5 | Anti-repetição e sequência de palavras | ✅ concluída |
-| 6 | Voz e interface gráfica | ✅ concluída |
-| 7 | Avaliação final | ⏳ próxima |
+| Para quê | apresentar: webcam → Libras → texto → voz | coletar dados, analisar, treinar, avaliar |
+| Onde | `scripts/demonstracao/` | `scripts/desenvolvimento/` |
+| Instala | `requirements.txt` | `requirements-dev.txt` |
+| Precisa de | `models/` com o modelo treinado | `data/` com as gravações |
+
+A aplicação não carrega nada do treino (dataset, relatórios, matplotlib, pytest). Isso é
+verificado automaticamente pelos testes (`tests/test_modos.py`).
 
 ## Requisitos
 
-- Python **3.10 a 3.12** (recomendado **3.11**)
-- Webcam
-- Voz em português instalada no sistema (para a fase de voz):
-  - **Windows:** instalar o idioma "Português (Brasil)" com recurso de fala
-  - **Linux:** `sudo apt install espeak-ng alsa-utils`
+- Python **3.10 a 3.12** (recomendado **3.11**) e uma webcam
+- Voz em português instalada no sistema:
+  - **Windows:** Configurações → Hora e idioma → adicionar "Português (Brasil)" com recurso de fala
   - **macOS:** voz nativa (ex.: "Luciana")
-- **Linux:** o MediaPipe precisa das bibliotecas gráficas do sistema e a interface precisa
-  do Tkinter: `sudo apt install libegl1 libgles2 python3-tk`
+- **Linux:** `sudo apt install python3-tk espeak-ng alsa-utils libegl1 libgles2`
 
-## Instalação
+---
 
-Na pasta do projeto:
+## Modo usuário / demonstração
 
-**Windows (PowerShell)**
+### Instalação
+
+**Windows (PowerShell)**, na pasta do projeto:
 
 ```powershell
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install -e .
 ```
 
 > Se o PowerShell bloquear a ativação: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+>
+> Em redes que interceptam HTTPS (erro `CERTIFICATE_VERIFY_FAILED`), atualize primeiro o
+> pip: `python -m pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org`
+> e depois instale normalmente — o pip novo usa os certificados do Windows. Ou use outra rede.
 
-**Linux / macOS**
+**Linux / macOS:**
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install -e .
 ```
 
-`pip install -e .` instala o pacote `src/libras` em modo editável, para que os scripts
-consigam fazer `from libras import config` de qualquer pasta.
+Não é preciso `pip install -e .`: os scripts encontram o código sozinhos.
 
-### Conferir a instalação
+### Uso
 
 ```bash
-python -m libras.config   # mostra caminhos, câmera, classes e limiares
-pytest                    # roda os testes
+python scripts/demonstracao/app.py         # interface gráfica (recomendada para apresentar)
+python -m libras                           # o mesmo, se o pacote estiver instalado
+python scripts/demonstracao/executar.py    # versão simples em janela do OpenCV
 ```
 
-## Fase 1 — testar câmera e detecção de mãos
+A interface mostra a webcam com os landmarks, o **sinal detectado agora** (com a
+confiança), o **último sinal confirmado**, a **sequência** e a **frase final**, e os
+indicadores de câmera, modelo, mãos e voz. Botões: Iniciar/Parar câmera, Finalizar frase,
+Reproduzir voz, Remover última palavra e Limpar frase (atalhos: Espaço, Backspace, C).
+Sem modelo treinado, a câmera funciona e mostra só os landmarks.
 
-```bash
-python scripts/testar_deteccao.py            # câmera padrão
-python scripts/testar_deteccao.py --camera 1 # outra câmera
-```
+Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece em "Frase
+final" e é falada em português do Brasil. A frase é a própria sequência de sinais (glosa,
+ex.: "EU NOME CAUA"): o MVP não traduz a gramática da Libras.
 
-Na primeira execução, o modelo `models/hand_landmarker.task` (~8 MB) é baixado
-automaticamente. A janela mostra os landmarks das mãos (verde = direita, azul =
-esquerda), o FPS e quais mãos foram detectadas. **Q** ou **ESC** fecha.
+**Na janela do OpenCV (`executar.py`):** C limpa, BACKSPACE apaga a última palavra,
+ESPAÇO encerra a frase, Q/ESC sai. Opções: `--sem-voz`, `--camera 1` e os parâmetros de
+estabilidade abaixo.
 
-Validação:
+### Parâmetros de estabilidade
 
-1. Sem mãos na frente da câmera → "Nenhuma mao detectada" (após 3 s aparecem dicas).
-2. Só a mão **direita** → "Mao direita" (se aparecer "esquerda", use
-   `TROCAR_LADOS = True` em `config.py`).
-3. Só a mão esquerda → "Mao esquerda". As duas → "Ambas as maos".
-4. FPS ≥ 15.
-
-## Fase 2 — coletar e analisar o dataset
-
-```bash
-python scripts/coletar_dados.py --sinal OI --pessoa ana      # --label também funciona
-python scripts/coletar_dados.py --sinal _NADA --pessoa ana   # classe "nenhum sinal"
-python scripts/analisar_dataset.py                           # relatório + gráficos em reports/
-```
-
-No coletor: **ESPAÇO** inicia/pausa a gravação contínua, **D** apaga a última amostra,
-**Q/ESC** sai. Fique a ~1 m da câmera com os **ombros visíveis**. São salvos apenas os
-landmarks (`data/raw/<SINAL>/*.npy`), sem imagens. Antes de gravar, preencha
-[`docs/SINAIS.md`](docs/SINAIS.md) com a variante de cada sinal.
-
-Meta para o protótipo: **40 amostras por sinal por pessoa, com 3 pessoas ou mais**
-(≥ 120 por sinal) e o dobro para `_NADA`.
-
-## Fase 3 — treinar o modelo
-
-```bash
-python scripts/construir_dataset.py     # data/raw -> data/processed/dataset.npz
-python scripts/treinar_modelo.py        # compara RF, SVM e MLP e salva o melhor
-python scripts/treinar_modelo.py --modelo rf --reconstruir
-```
-
-Saídas: `models/classificador.joblib`, `models/classes.json`,
-`models/classificador_info.json`, `reports/classification_report.txt` e
-`reports/matriz_confusao.png`.
-
-## Fase 4 — reconhecimento em tempo real
-
-```bash
-python scripts/executar.py
-python scripts/executar.py --limiar 0.6 --consecutivas 4 --cooldown 1.5
-```
-
-Teclas: **C** limpa a sequência, **BACKSPACE** apaga a última palavra, **ESPAÇO** encerra
-a frase, **Q/ESC** sai. As palavras aceitas também aparecem no terminal.
-
-Parâmetros de estabilidade (em `config.py` ou pela linha de comando):
+Em `src/libras/config.py` ou pela linha de comando do `executar.py`:
 
 | Parâmetro | Padrão | Opção | Aumentar | Diminuir |
 |---|---|---|---|---|
@@ -139,61 +98,115 @@ Parâmetros de estabilidade (em `config.py` ou pela linha de comando):
 | `PASSO_INFERENCIA` | 5 | `--passo` | menos CPU, reação mais lenta | reage mais rápido, mais CPU |
 | `PAUSA_FRASE_S` | 2.5 | — | frases mais longas | encerra a frase mais cedo |
 
-## Sinais com movimento (features versão 2)
+### Levar para o computador da apresentação
 
-Cada previsão usa uma janela de 1,5 s. Desde a versão 2 das features, além da forma e da
-posição das mãos em cada frame, o vetor traz características de movimento (velocidade,
-trajetória, mudanças de direção, abertura da mão, distância entre as mãos). Sinais
-estáticos continuam funcionando; modelos antigos (v1) também.
+No computador de desenvolvimento (com o modelo treinado):
 
 ```bash
-python scripts/comparar_features.py   # v1 x v2 no seu dataset, por sinal
-python scripts/treinar_modelo.py      # reconstrói o dataset.npz na versão atual
+python scripts/desenvolvimento/empacotar_app.py   # gera dist/Vis-oLibras-demo.zip
 ```
 
-Detalhes e justificativa: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 7.3.
+O zip leva só o necessário (código da aplicação, `requirements.txt` e os modelos,
+inclusive os do MediaPipe — útil em redes que bloqueiam o download) e um `LEIA-ME.txt`
+com os comandos.
 
-## Aplicação de demonstração (interface gráfica)
+---
+
+## Modo desenvolvimento / treinamento
+
+### Instalação
+
+Igual ao modo usuário, trocando o arquivo de dependências:
 
 ```bash
-python scripts/app.py            # interface gráfica (recomendada para apresentar)
-python scripts/executar.py       # versão simples em janela do OpenCV
+pip install -r requirements-dev.txt      # aplicação + matplotlib + pytest
+python -m libras.config                  # confere caminhos, câmera, classes e limiares
+pytest                                   # roda os testes
 ```
 
-A interface mostra a webcam com os landmarks, o **sinal detectado agora** (com a
-confiança), o **último sinal confirmado**, a **sequência** e a **frase final**, além dos
-indicadores de câmera, modelo, mãos e voz. Botões: Iniciar/Parar câmera, Finalizar frase,
-Reproduzir voz, Remover última palavra e Limpar frase (atalhos: Espaço, Backspace, C).
-Sem modelo treinado, a câmera funciona e mostra só os landmarks.
+### Fluxo
 
-Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece em "Frase
-final" e é falada em português do Brasil (voz offline do sistema). A frase é a própria
-sequência de sinais (glosa, ex.: "EU NOME CAUA"): o MVP não traduz a gramática da Libras.
+```
+testar_deteccao → coletar_dados → analisar_dataset → treinar_modelo → avaliar_modelo → empacotar_app
+```
+
+**1. Diagnóstico da câmera** (sem reconhecimento):
+
+```bash
+python scripts/desenvolvimento/testar_deteccao.py            # --camera 1 para outra câmera
+```
+
+Mostra landmarks (verde = direita, azul = esquerda), FPS e mãos detectadas. Só a mão
+**direita** deve mostrar "Mao direita"; se aparecer "esquerda", use `TROCAR_LADOS = True`
+no `config.py`.
+
+**2. Coletar dados** — preencha antes [`docs/SINAIS.md`](docs/SINAIS.md) com a variante
+de cada sinal:
+
+```bash
+python scripts/desenvolvimento/coletar_dados.py --sinal OI --pessoa ana      # --label também funciona
+python scripts/desenvolvimento/coletar_dados.py --sinal _NADA --pessoa ana   # classe "nenhum sinal"
+```
+
+ESPAÇO inicia/pausa a gravação contínua, D apaga a última amostra, Q/ESC sai. Fique a
+~1 m da câmera com os ombros visíveis. São salvos só os landmarks
+(`data/raw/<SINAL>/*.npy`), sem imagens. Meta: **40 amostras por sinal por pessoa, com 3
+pessoas ou mais**, e o dobro para `_NADA`.
+
+**3. Analisar o dataset:**
+
+```bash
+python scripts/desenvolvimento/analisar_dataset.py       # relatório + gráficos em reports/
+```
+
+**4. Treinar:**
+
+```bash
+python scripts/desenvolvimento/treinar_modelo.py         # compara RF, SVM e MLP e salva o melhor
+python scripts/desenvolvimento/treinar_modelo.py --modelo rf --reconstruir
+python scripts/desenvolvimento/construir_dataset.py      # (opcional) só gera o dataset.npz
+python scripts/desenvolvimento/comparar_features.py      # features v1 (posição) × v2 (+ movimento)
+```
+
+Saídas: `models/classificador.joblib`, `models/classes.json`,
+`models/classificador_info.json`, `reports/classification_report.txt` e
+`reports/matriz_confusao.png`. Desde a versão 2 das features, o vetor inclui
+características de movimento ([`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 7.3);
+modelos antigos (v1) continuam funcionando.
+
+**5. Avaliar o modelo salvo** (por exemplo, com uma pessoa que não participou do treino):
+
+```bash
+python scripts/desenvolvimento/avaliar_modelo.py --pessoa dani
+```
+
+**6. Empacotar para a demonstração:** `python scripts/desenvolvimento/empacotar_app.py`.
+
+---
 
 ## Configuração
 
 Todas as configurações ficam em [`src/libras/config.py`](src/libras/config.py): câmera,
 quantidade de frames, confiança mínima, lista de sinais, caminhos do dataset e do modelo,
-entre outras. Os caminhos são calculados a partir da raiz do projeto, então funcionam em
-qualquer computador.
-
-Para usar outra câmera sem editar o arquivo:
+voz, frases. Os caminhos são relativos à pasta do projeto. Variáveis de ambiente úteis:
 
 ```bash
-LIBRAS_CAMERA=1 python scripts/executar.py        # Linux/macOS
-$env:LIBRAS_CAMERA=1; python scripts/executar.py  # Windows (PowerShell)
+LIBRAS_CAMERA=1 python scripts/demonstracao/app.py         # outra câmera (Linux/macOS)
+$env:LIBRAS_CAMERA=1; python scripts/demonstracao/app.py   # Windows (PowerShell)
+LIBRAS_DATA=/caminho/do/drive python scripts/desenvolvimento/treinar_modelo.py  # dataset em outro lugar
 ```
 
 ## Estrutura
 
 ```
-src/libras/   lógica reutilizável (módulos da aplicação)
-scripts/      programas executados pelo usuário
-data/raw/     amostras gravadas, uma pasta por sinal
-models/       modelos do MediaPipe e classificador treinado
-reports/      métricas e gráficos gerados
-tests/        testes automatizados
-docs/         arquitetura e descrição dos sinais
+src/libras/                 código (núcleo + aplicação + desenvolvimento; ver __init__.py)
+scripts/demonstracao/       modo usuário
+scripts/desenvolvimento/    modo desenvolvimento
+data/                       gravações (desenvolvimento, fora do Git)
+models/                     modelos do MediaPipe e classificador treinado
+reports/                    métricas e gráficos (desenvolvimento)
+tests/                      testes automatizados
+docs/                       arquitetura e descrição dos sinais
 ```
 
 Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 2.

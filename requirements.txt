@@ -1,9 +1,12 @@
-# Dependências do Vis-oLibras (Python 3.10 a 3.12; recomendado 3.11).
+# MODO USUÁRIO / DEMONSTRAÇÃO - o necessário para rodar a aplicação.
+# Python 3.10 a 3.12 (recomendado 3.11). Para treinar: requirements-dev.txt
+#
 # Após a primeira instalação que funcionar em todas as máquinas do grupo,
 # fixar as versões exatas com: pip freeze > requirements-lock.txt
 
-# Captura de vídeo e interface
-opencv-python>=4.8
+# Câmera e imagem. Usamos o "contrib" porque é o que o MediaPipe instala: ter
+# opencv-python e opencv-contrib-python juntos causa conflito (mesmo pacote cv2).
+opencv-contrib-python>=4.8
 
 # Landmarks das mãos e da pose (API Tasks)
 mediapipe>=0.10.14
@@ -11,20 +14,13 @@ mediapipe>=0.10.14
 # Cálculo numérico
 numpy>=1.26
 
-# Aprendizado de máquina e persistência do modelo
+# Carregar e usar o modelo treinado (o modelo salvo é um objeto do scikit-learn)
 scikit-learn>=1.3
 joblib>=1.3
 
 # Voz offline
 pyttsx3>=2.90
 
-# Interface gráfica de demonstração (no Linux: sudo apt install python3-tk)
+# Interface gráfica (no Linux: sudo apt install python3-tk) e imagens com acentos
 customtkinter>=5.2
-
-# Gráficos da avaliação (matriz de confusão); a fonte DejaVu dele é usada
-# para escrever acentos na tela com o Pillow
-matplotlib>=3.8
-pillow>=10.0
-
-# Testes
-pytest>=8.0
+pillow>=10.1

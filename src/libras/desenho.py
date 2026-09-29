@@ -3,13 +3,12 @@ informações (FPS, mãos detectadas, estado da coleta...) e leitura do teclado.
 
 Observação: `cv2.putText` não desenha acentos (apareceriam como "??"), então
 o texto do painel passa por `sem_acentos()`. A legenda com a frase, que precisa
-dos acentos ("Não", "é"), é desenhada com o Pillow e a fonte DejaVu (que vem
-com o matplotlib) em `desenhar_legenda()`.
+dos acentos ("Não", "é"), é desenhada com o Pillow em `desenhar_legenda()`,
+usando uma fonte do próprio sistema (sem depender de bibliotecas de treino).
 """
 
 from __future__ import annotations
 
-import os
 import unicodedata
 from functools import lru_cache
 
@@ -51,15 +50,31 @@ def desenhar_barra(frame: np.ndarray, origem: tuple[int, int], tamanho: tuple[in
     cv2.rectangle(frame, (x, y), (x + largura, y + altura), COR_TEXTO, 1)
 
 
-@lru_cache(maxsize=4)
+# Fontes com acentos, na ordem de preferência. Nomes sem pasta são procurados
+# pelo Pillow nas pastas de fontes do sistema (Windows e Linux).
+FONTES_SISTEMA = (
+    "segoeui.ttf", "arial.ttf",                                   # Windows
+    "DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "LiberationSans-Regular.ttf",                                 # Linux
+    "/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Arial.ttf",  # macOS
+)
+
+
+@lru_cache(maxsize=8)
 def _fonte(tamanho: int):
-    """Fonte com acentos para o Pillow (DejaVu do matplotlib) ou None."""
+    """Fonte com acentos para o Pillow, ou None se o Pillow não estiver disponível."""
     try:
-        import matplotlib
         from PIL import ImageFont
-        caminho = os.path.join(matplotlib.get_data_path(), "fonts", "ttf", "DejaVuSans.ttf")
-        return ImageFont.truetype(caminho, tamanho)
-    except (ImportError, OSError):
+    except ImportError:
+        return None
+    for nome in FONTES_SISTEMA:
+        try:
+            return ImageFont.truetype(nome, tamanho)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size=tamanho)  # Pillow >= 10.1: fonte embutida
+    except TypeError:
         return None
 
 

@@ -1,6 +1,9 @@
-# Permite instalar o pacote src/libras em modo editável (pip install -e .),
-# para que os scripts façam "from libras import config" de qualquer pasta.
-# As dependências ficam em requirements.txt.
+# Pacote src/libras. Os scripts funcionam sem instalar (ajustam o caminho
+# sozinhos), mas também é possível instalar:
+#   pip install -e .                    -> modo usuário (aplicação)
+#   pip install -e ".[desenvolvimento]" -> + coleta, treino e testes
+# As listas abaixo são as mesmas de requirements.txt e requirements-dev.txt
+# (tests/test_modos.py confere se continuam iguais).
 
 [build-system]
 requires = ["setuptools>=61"]
@@ -8,9 +11,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vis-olibras"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tradução de Libras para texto e voz com visão computacional e IA"
 requires-python = ">=3.10"
+dependencies = [
+    "opencv-contrib-python>=4.8",
+    "mediapipe>=0.10.14",
+    "numpy>=1.26",
+    "scikit-learn>=1.3",
+    "joblib>=1.3",
+    "pyttsx3>=2.90",
+    "customtkinter>=5.2",
+    "pillow>=10.1",
+]
+
+[project.optional-dependencies]
+desenvolvimento = [
+    "matplotlib>=3.8",
+    "pytest>=8.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

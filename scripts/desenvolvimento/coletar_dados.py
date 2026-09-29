@@ -5,9 +5,9 @@ ombros), salvos em data/raw/<SINAL>/ como .npy, sem imagens. Amostras ruins
 (sem mãos, sem ombros, câmera lenta) são descartadas na hora.
 
 Uso:
-    python scripts/coletar_dados.py --sinal OI --pessoa ana
-    python scripts/coletar_dados.py --label NAO --pessoa ana --meta 20
-    python scripts/coletar_dados.py --sinal _NADA --pessoa ana
+    python scripts/desenvolvimento/coletar_dados.py --sinal OI --pessoa ana
+    python scripts/desenvolvimento/coletar_dados.py --label NAO --pessoa ana --meta 20
+    python scripts/desenvolvimento/coletar_dados.py --sinal _NADA --pessoa ana
 
 Teclas:
     ESPAÇO  inicia/pausa a gravação contínua (uma amostra atrás da outra)
@@ -22,6 +22,8 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config, dataset
 from libras.camera import Camera, ErroCamera

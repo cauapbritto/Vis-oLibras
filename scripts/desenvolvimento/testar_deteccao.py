@@ -4,8 +4,8 @@ Abre a webcam, detecta até duas mãos, desenha landmarks e conexões e mostra o
 FPS e quais mãos foram detectadas. Não reconhece sinais.
 
 Uso:
-    python scripts/testar_deteccao.py
-    python scripts/testar_deteccao.py --camera 1
+    python scripts/desenvolvimento/testar_deteccao.py
+    python scripts/desenvolvimento/testar_deteccao.py --camera 1
 
 Teclas: Q ou ESC para sair.
 """
@@ -15,6 +15,9 @@ import sys
 import time
 
 import cv2
+
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config
 from libras.camera import Camera, ErroCamera

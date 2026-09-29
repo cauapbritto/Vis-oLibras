@@ -97,81 +97,93 @@ de voz) sem mexer no resto.
 
 ---
 
-## 2. Estrutura de diretórios
+## 2. Estrutura de diretórios e os dois modos
+
+O projeto tem **dois modos claramente separados**:
+
+| | **Modo usuário / demonstração** | **Modo desenvolvimento / treinamento** |
+|---|---|---|
+| Para quê | apresentar: webcam → Libras → texto → voz | construir o modelo: coletar, analisar, treinar, avaliar |
+| Scripts | `scripts/demonstracao/` (`app.py`, `executar.py`) ou `python -m libras` | `scripts/desenvolvimento/` |
+| Dependências | `requirements.txt` | `requirements-dev.txt` (= aplicação + matplotlib + pytest) |
+| Arquivos usados | `models/` (modelos do MediaPipe + classificador treinado) | `data/`, `models/`, `reports/` |
+| Módulos | núcleo + aplicação | todos |
 
 ```
 Vis-oLibras/
-├── README.md                    # como instalar e rodar
-├── requirements.txt             # dependências com versões fixadas
-├── pyproject.toml               # permite `pip install -e .` (importar `libras` de qualquer pasta)
-├── .gitignore                   # ignora venv/, data/raw (opcional), models/*.joblib grandes
+├── README.md
+├── requirements.txt             # MODO USUÁRIO: só o que a aplicação precisa
+├── requirements-dev.txt         # MODO DESENVOLVIMENTO: -r requirements.txt + treino/testes
+├── pyproject.toml               # mesmas listas: pip install -e .  |  pip install -e ".[desenvolvimento]"
 │
-├── docs/
-│   ├── ARQUITETURA.md           # este documento
-│   └── SINAIS.md                # descrição/foto/link de referência de cada sinal escolhido
+├── src/libras/
+│   ├── __init__.py              # define as três camadas (listas de módulos)
+│   │
+│   │   NÚCLEO (usado pelos dois modos)
+│   ├── config.py                # TODAS as constantes: sinais, limiares, caminhos...
+│   ├── camera.py                # webcam com tratamento de erros
+│   ├── extrator.py              # MediaPipe: frame → landmarks crus (mãos + pose)
+│   ├── features.py              # normalização e vetor de features (igual no treino e no tempo real)
+│   ├── temporal.py              # sequência dos últimos segundos + características de movimento
+│   ├── desenho.py               # landmarks, painéis e textos na imagem
+│   ├── metricas.py              # FPS
+│   │
+│   │   APLICAÇÃO (modo usuário)
+│   ├── classificador.py         # carregar o modelo e prever (sinal, confiança)
+│   ├── estabilizador.py         # anti-repetição
+│   ├── reconhecedor.py          # sequência + modelo + estabilizador, frame a frame
+│   ├── frase.py                 # gerenciador de sentença
+│   ├── voz.py                   # text-to-speech offline em thread
+│   ├── pipeline.py              # frame → landmarks → reconhecimento → imagem
+│   ├── captura.py               # câmera + pipeline em thread (a interface não trava)
+│   ├── interface.py             # interface gráfica (CustomTkinter)
+│   ├── __main__.py              # python -m libras → abre a interface
+│   │
+│   │   DESENVOLVIMENTO (modo treinamento)
+│   ├── dataset.py               # gravar, ler, validar e analisar amostras
+│   └── avaliacao.py             # sinais confundidos e matriz de confusão
 │
-├── src/
-│   └── libras/                  # pacote principal (módulos pequenos e planos)
-│       ├── __init__.py
-│       ├── config.py            # TODAS as constantes: sinais, limiares, caminhos, T, fps...
-│       ├── camera.py            # abrir webcam, ler frame, espelhar, liberar
-│       ├── extrator.py          # MediaPipe: frame → landmarks crus (mãos + pose)
-│       ├── features.py          # normalização, vetor por frame, buffer, reamostragem
-│       ├── temporal.py          # sequência dos últimos segundos + características de movimento
-│       ├── dataset.py           # gravar, ler, validar e analisar amostras (regras únicas)
-│       ├── classificador.py     # carregar modelo, prever (sinal, confiança)
-│       ├── estabilizador.py     # regras anti-repetição (máquina de estados)
-│       ├── reconhecedor.py      # buffer + classificador + estabilizador, frame a frame (sem câmera)
-│       ├── pipeline.py          # frame -> landmarks -> reconhecimento -> imagem (usado pelas 2 interfaces)
-│       ├── captura.py           # câmera + pipeline em thread separada (a interface não trava)
-│       ├── interface.py         # interface gráfica (CustomTkinter)
-│       ├── frase.py             # acumular palavras, formar frase, dicionário de frases
-│       ├── voz.py               # TTS em thread com fila
-│       ├── desenho.py           # desenhar landmarks, texto, FPS, barra de confiança
-│       └── metricas.py          # cronômetro por etapa, FPS, log CSV de latência
+├── scripts/
+│   ├── demonstracao/            # MODO USUÁRIO
+│   │   ├── app.py               # interface gráfica (recomendada para apresentar)
+│   │   └── executar.py          # versão simples em janela do OpenCV
+│   └── desenvolvimento/         # MODO DESENVOLVIMENTO
+│       ├── testar_deteccao.py   # diagnóstico: webcam → MediaPipe (sem reconhecimento)
+│       ├── coletar_dados.py     # grava amostras de um sinal
+│       ├── analisar_dataset.py  # valida o dataset: contagens, inválidas, inconsistências, gráficos
+│       ├── construir_dataset.py # data/raw → data/processed/dataset.npz
+│       ├── treinar_modelo.py    # compara RF/SVM/MLP, avalia e salva o modelo
+│       ├── avaliar_modelo.py    # avalia o modelo salvo (ex.: com uma pessoa nova)
+│       ├── comparar_features.py # features v1 (posição) × v2 (+ movimento)
+│       ├── empacotar_app.py     # gera o zip do modo usuário (dist/Vis-oLibras-demo.zip)
+│       └── visualizar_amostra.py# (a implementar) reproduz uma amostra gravada
 │
-├── scripts/                     # pontos de entrada (o aluno roda estes)
-│   ├── testar_deteccao.py       # Fase 1: valida webcam → OpenCV → MediaPipe (sem reconhecimento)
-│   ├── coletar_dados.py         # grava amostras de um sinal
-│   ├── visualizar_amostra.py    # reproduz uma amostra gravada (conferência de qualidade)
-│   ├── analisar_dataset.py      # valida o dataset: contagens, inválidas, inconsistências, gráficos
-│   ├── construir_dataset.py     # data/raw → data/processed/dataset.npz
-│   ├── treinar_modelo.py        # treina e salva o modelo
-│   ├── comparar_features.py     # compara features v1 (posição) x v2 (+ movimento) no seu dataset
-│   ├── avaliar_modelo.py        # relatório de precisão + matriz de confusão
-│   ├── executar.py              # aplicação em tempo real (janela OpenCV)
-│   └── app.py                   # aplicação de demonstração (interface gráfica)
-│
-├── data/
-│   ├── raw/                     # uma pasta por sinal, um .npy por amostra
-│   │   ├── OI/
-│   │   ├── EU/
-│   │   ├── ...
-│   │   ├── NAO/                 # identificadores sem acento (exibido como "NÃO")
-│   │   └── _NADA/               # classe "nenhum sinal" (muito importante!)
-│   ├── processed/
-│   │   └── dataset.npz
-│   └── metadata.csv             # índice de todas as amostras (fora do Git, acompanha os .npy)
-│
-├── models/
-│   ├── hand_landmarker.task     # modelo do MediaPipe (baixado)
-│   ├── pose_landmarker_lite.task
-│   ├── classificador.joblib     # modelo treinado
-│   └── classificador_info.json  # classes, data, acurácia, parâmetros de features
-│
-├── reports/                     # saídas de avaliação (gerado)
-│   ├── classification_report.txt
-│   ├── matriz_confusao.png
-│   └── latencia_<data>.csv
-│
-└── tests/                       # testes da lógica pura (sem câmera)
-    ├── test_features.py
-    ├── test_estabilizador.py
-    └── test_frase.py
+├── data/                        # (desenvolvimento) amostras; fora do Git
+│   ├── raw/<SINAL>/*.npy        # identificadores sem acento: NAO é exibido como "NÃO"
+│   ├── processed/dataset.npz
+│   └── metadata.csv
+├── models/                      # (os dois modos) .task do MediaPipe + classificador treinado
+├── reports/                     # (desenvolvimento) métricas e gráficos
+├── docs/                        # arquitetura e descrição dos sinais
+└── tests/                       # testes (inclui test_modos.py, que garante a separação)
 ```
 
-**Regra simples:** `src/libras/` contém *lógica reutilizável*; `scripts/` contém *programas
-que o usuário executa* e apenas "cola" os módulos.
+**Regras de dependência entre camadas** (verificadas por `tests/test_modos.py`):
+
+- o **núcleo** só importa o núcleo;
+- a **aplicação** só importa núcleo + aplicação — nunca `dataset`, `avaliacao`, matplotlib ou pytest;
+- o **desenvolvimento** pode usar tudo (ex.: `treinar_modelo.py` usa `classificador.salvar_classificador`).
+
+**Pacote de demonstração:** `empacotar_app.py` gera um zip só com o núcleo, a aplicação,
+os scripts de demonstração, o `requirements.txt` e os modelos — sem dataset, relatórios,
+testes ou código de treino. Todos os scripts ajustam o caminho de `src/` sozinhos, então
+funcionam sem `pip install -e .`.
+
+**Dependências:** a aplicação ainda precisa do scikit-learn e do joblib para abrir o modelo
+(o modelo salvo é um objeto do scikit-learn). O matplotlib não é usado pelo nosso código na
+aplicação, mas continua instalado porque o próprio MediaPipe depende dele. O OpenCV é o
+`opencv-contrib-python`, o mesmo que o MediaPipe instala (ter também o `opencv-python`
+causa conflito).
 
 ---
 
@@ -274,7 +286,7 @@ sinal, mesmo quando a pessoa não está sinalizando — é a maior fonte de fals
 
 ### 5.3 Script `coletar_dados.py`
 
-Uso: `python scripts/coletar_dados.py --sinal OI --pessoa ana` (`--label` também é aceito)
+Uso: `python scripts/desenvolvimento/coletar_dados.py --sinal OI --pessoa ana` (`--label` também é aceito)
 
 Funcionamento:
 
@@ -555,56 +567,36 @@ Essa classe **não depende de câmera** — recebe `(sinal, confiança, tempo)` 
 3. Limite de segurança: `MAX_PALAVRAS = 8`.
 4. Correção manual: `BACKSPACE` remove a última palavra; `C` limpa.
 
-### 10.2 De palavras para português (`config/frases.json`)
+### 10.2 Gerenciador de sentença (sem tradução inventada)
 
-Libras tem gramática própria; o MVP **não** faz tradução gramatical. Usamos um
-dicionário de combinações conhecidas; o que não estiver nele é exibido juntando as
-palavras.
+`frase.GerenciadorSentenca` é independente da visão e separa quatro estados: **sinal atual**
+(o que o modelo vê agora), **último confirmado**, **sequência** e **frase final**. Funções:
+adicionar (com proteção extra contra repetição involuntária), remover a última, limpar,
+finalizar (botão, Espaço, pausa ou frase cheia).
 
-```json
-{
-  "OI":             "Oi!",
-  "BOM DIA":        "Bom dia!",
-  "OI BOM DIA":     "Oi, bom dia!",
-  "MEU NOME":       "Meu nome é",
-  "EU AJUDA":       "Eu preciso de ajuda.",
-  "AJUDA":          "Ajuda!",
-  "OBRIGADO":       "Obrigado!",
-  "SIM":            "Sim.",
-  "NAO":            "Não."
-}
-```
-
-Algoritmo: procurar a **maior** sequência de palavras que exista no dicionário a partir do
-início, substituir, continuar. Ex.: `OI BOM DIA OBRIGADO` → "Oi, bom dia! Obrigado!".
-Fallback: `EU NÃO` → "Eu não".
-
-Na tela: linha 1 = palavras reconhecidas (glosa, ex.: `OI · BOM · DIA`); linha 2 = frase em
-português.
+O MVP **não traduz** Libras para português: a frase é a própria sequência de sinais (glosa),
+ex.: "EU NOME CAUA". Libras tem gramática própria, e combinações como "EU AJUDA" são ambíguas
+("eu ajudo"? "me ajude"?). A arquitetura aceita `regras` (funções palavras → palavras)
+aplicadas antes de montar o texto, para regras validadas no futuro.
 
 ---
 
 ## 11. Conversão em voz (`voz.py`)
 
-- Motor padrão: **pyttsx3** — gratuito, **offline**, usa a voz do sistema operacional.
-- Seleção automática de uma voz cujo idioma contenha `pt` (configurável em `config.py`);
-  velocidade `TAXA_FALA ≈ 170`.
-- **Não pode travar o vídeo:** a fala roda numa **thread separada** que consome uma
-  **fila** (`queue.Queue`). O laço principal só faz `voz.falar(texto)` e segue.
-- Robustez: em algumas versões do Windows, `runAndWait()` repetido trava; a *thread*
-  cria o motor uma vez e, se houver falha, recria o motor para cada fala.
-- **Quando falar:** por padrão, a **frase inteira** ao final da pausa. Opção em config
-  `FALAR_CADA_PALAVRA = False` para falar também cada palavra ao ser reconhecida (bom para
-  demonstração).
-
-Interface simples, para trocar o motor no futuro:
-
-```
-class MotorVoz:  falar(texto: str) -> None ;  encerrar() -> None
-```
-
-Alternativas futuras: **Piper TTS** (offline, voz neural pt-BR de boa qualidade) ou
-**gTTS** (voz boa, mas exige internet).
+- **Offline e gratuito:** Windows usa o **pyttsx3** (vozes SAPI5 do sistema); Linux usa o
+  pyttsx3 com eSpeak ou, se faltar o `aplay` (com o qual o pyttsx3 toca o som e sem o qual
+  fica mudo sem avisar), o comando `espeak-ng`; macOS usa o comando `say` (o pyttsx3 trava
+  fora da thread principal no Mac).
+- **Português do Brasil** quando disponível (`IDIOMAS_VOZ`), velocidade `TAXA_FALA ≈ 170`.
+- **Não trava o vídeo:** a fala roda numa thread própria com fila. `falar(texto)` / `speak(texto)`
+  devolve na hora; texto vazio é ignorado; durante outra fala, o pedido é ignorado ou
+  enfileirado (`POLITICA_VOZ`); sem sistema de voz, `disponivel = False` e o resto funciona;
+  erro durante a fala é registrado e o motor é recriado.
+- **Quando falar:** a frase inteira quando é finalizada (`FALAR_AO_FINALIZAR`), e
+  opcionalmente cada palavra (`FALAR_CADA_PALAVRA`). O texto vai em minúsculas, porque
+  sintetizadores leem palavras em MAIÚSCULAS como siglas.
+- Motor trocável (`Voz(criar_motor=...)`): alternativas futuras são **Piper TTS** (offline,
+  voz neural pt-BR) ou **gTTS** (exige internet).
 
 ---
 
@@ -659,7 +651,7 @@ Cronometrar cada etapa com `time.perf_counter()` e gravar em `reports/latencia_<
 ### 13.1 Adicionar um sinal novo — **sem alterar código**
 
 1. Documentar o sinal em `docs/SINAIS.md`.
-2. `python scripts/coletar_dados.py --sinal CASA --pessoa ana` (as classes vêm das pastas
+2. `python scripts/desenvolvimento/coletar_dados.py --sinal CASA --pessoa ana` (as classes vêm das pastas
    de `data/raw/`).
 3. `construir_dataset.py` → `treinar_modelo.py` → `avaliar_modelo.py`.
 4. (Opcional) adicionar combinações em `config/frases.json`.

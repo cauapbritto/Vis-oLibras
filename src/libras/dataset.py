@@ -431,7 +431,7 @@ def precisa_reconstruir() -> bool:
 def carregar_dados_treino() -> DadosTreino:
     """Carrega e VALIDA o dataset.npz (versão das features, formato e rótulos)."""
     if not config.ARQ_DATASET.is_file():
-        raise ErroDataset(f"{config.ARQ_DATASET} não existe; rode scripts/construir_dataset.py")
+        raise ErroDataset(f"{config.ARQ_DATASET} não existe; rode scripts/desenvolvimento/construir_dataset.py")
     with np.load(config.ARQ_DATASET, allow_pickle=False) as arquivo:
         versao, t_frames = int(arquivo["versao_features"]), int(arquivo["t_frames"])
         dados = DadosTreino(arquivo["X"], arquivo["y"], arquivo["pessoas"], arquivo["arquivos"])
@@ -439,7 +439,7 @@ def carregar_dados_treino() -> DadosTreino:
     if versao != config.VERSAO_FEATURES or t_frames != config.T_FRAMES:
         raise ErroDataset(
             f"dataset.npz foi gerado com features v{versao}/T={t_frames}, mas o config.py usa "
-            f"v{config.VERSAO_FEATURES}/T={config.T_FRAMES}; rode scripts/construir_dataset.py")
+            f"v{config.VERSAO_FEATURES}/T={config.T_FRAMES}; rode scripts/desenvolvimento/construir_dataset.py")
     problemas = validar_dados_treino(dados)
     if problemas:
         raise ErroDataset("dataset.npz inválido:\n  - " + "\n  - ".join(problemas))

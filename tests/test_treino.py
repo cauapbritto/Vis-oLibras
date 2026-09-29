@@ -12,7 +12,7 @@ from libras import config, dataset
 from sinteticos import amostra
 
 _spec = importlib.util.spec_from_file_location(
-    "treinar_modelo", Path(__file__).parents[1] / "scripts" / "treinar_modelo.py")
+    "treinar_modelo", Path(__file__).parents[1] / "scripts" / "desenvolvimento" / "treinar_modelo.py")
 treinar_modelo = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(treinar_modelo)
 

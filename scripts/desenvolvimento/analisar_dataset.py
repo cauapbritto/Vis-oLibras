@@ -6,15 +6,18 @@ inconsistências e sinais parecidos. Salva o relatório em
 reports/analise_dataset.txt e os gráficos em reports/analise_dataset.png.
 
 Uso:
-    python scripts/analisar_dataset.py
-    python scripts/analisar_dataset.py --remover-invalidas   # pede confirmação
-    python scripts/analisar_dataset.py --sem-grafico
+    python scripts/desenvolvimento/analisar_dataset.py
+    python scripts/desenvolvimento/analisar_dataset.py --remover-invalidas   # pede confirmação
+    python scripts/desenvolvimento/analisar_dataset.py --sem-grafico
 """
 
 import argparse
 import sys
 
 import numpy as np
+
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
 from libras import config, dataset
 from libras.dataset import PERFIS_MAOS, RelatorioDataset

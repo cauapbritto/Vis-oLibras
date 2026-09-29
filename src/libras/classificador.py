@@ -86,7 +86,7 @@ def salvar_classificador(modelo: Any, info: dict[str, Any]) -> None:
 def carregar_classificador() -> Classificador:
     for arquivo in (config.ARQ_MODELO, config.ARQ_MODELO_INFO, config.ARQ_CLASSES):
         if not arquivo.is_file():
-            raise ErroClassificador(f"{arquivo} não existe; treine com scripts/treinar_modelo.py")
+            raise ErroClassificador(f"{arquivo} não existe; treine com scripts/desenvolvimento/treinar_modelo.py")
     try:
         modelo = joblib.load(config.ARQ_MODELO)
         info = json.loads(config.ARQ_MODELO_INFO.read_text(encoding="utf-8"))

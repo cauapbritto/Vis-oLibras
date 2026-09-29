@@ -370,5 +370,5 @@ def iniciar(indice_camera: int = config.INDICE_CAMERA, tema: str = "dark") -> No
     aplicacao = AplicacaoLibras(indice_camera)
     if aplicacao.erro_modelo:
         aplicacao._mostrar_aviso("Modelo não encontrado: a câmera mostra só os landmarks. "
-                                 "Treine com scripts/treinar_modelo.py")
+                                 "Treine com scripts/desenvolvimento/treinar_modelo.py")
     aplicacao.mainloop()
