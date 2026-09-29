@@ -4,7 +4,7 @@ from libras import config
 
 
 def test_caminhos_sao_relativos_a_raiz_do_projeto():
-    for caminho in (config.DIR_RAW, config.ARQ_DATASET, config.ARQ_MODELO, config.ARQ_FRASES):
+    for caminho in (config.DIR_RAW, config.ARQ_DATASET, config.ARQ_MODELO, config.DIR_REPORTS):
         assert caminho.is_relative_to(config.RAIZ_PROJETO)
 
 

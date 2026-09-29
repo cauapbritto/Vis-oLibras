@@ -19,9 +19,9 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
 | 2 | Coleta de dados e análise do dataset | ✅ concluída |
 | 3 | Dataset, treino e avaliação | ✅ concluída |
 | 4 | Reconhecimento em tempo real | ✅ concluída |
-| 5 | Anti-repetição e frases | ✅ concluída (sem voz) |
-| 6 | Voz | ⏳ próxima |
-| 7 | Avaliação final | — |
+| 5 | Anti-repetição e sequência de palavras | ✅ concluída |
+| 6 | Voz e interface gráfica | ✅ concluída |
+| 7 | Avaliação final | ⏳ próxima |
 
 ## Requisitos
 
@@ -29,10 +29,10 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
 - Webcam
 - Voz em português instalada no sistema (para a fase de voz):
   - **Windows:** instalar o idioma "Português (Brasil)" com recurso de fala
-  - **Linux:** `sudo apt install espeak-ng`
+  - **Linux:** `sudo apt install espeak-ng alsa-utils`
   - **macOS:** voz nativa (ex.: "Luciana")
-- **Linux:** o MediaPipe precisa das bibliotecas gráficas do sistema:
-  `sudo apt install libegl1 libgles2`
+- **Linux:** o MediaPipe precisa das bibliotecas gráficas do sistema e a interface precisa
+  do Tkinter: `sudo apt install libegl1 libgles2 python3-tk`
 
 ## Instalação
 
@@ -153,6 +153,23 @@ python scripts/treinar_modelo.py      # reconstrói o dataset.npz na versão atu
 
 Detalhes e justificativa: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 7.3.
 
+## Aplicação de demonstração (interface gráfica)
+
+```bash
+python scripts/app.py            # interface gráfica (recomendada para apresentar)
+python scripts/executar.py       # versão simples em janela do OpenCV
+```
+
+A interface mostra a webcam com os landmarks, o **sinal detectado agora** (com a
+confiança), o **último sinal confirmado**, a **sequência** e a **frase final**, além dos
+indicadores de câmera, modelo, mãos e voz. Botões: Iniciar/Parar câmera, Finalizar frase,
+Reproduzir voz, Remover última palavra e Limpar frase (atalhos: Espaço, Backspace, C).
+Sem modelo treinado, a câmera funciona e mostra só os landmarks.
+
+Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece em "Frase
+final" e é falada em português do Brasil (voz offline do sistema). A frase é a própria
+sequência de sinais (glosa, ex.: "EU NOME CAUA"): o MVP não traduz a gramática da Libras.
+
 ## Configuração
 
 Todas as configurações ficam em [`src/libras/config.py`](src/libras/config.py): câmera,
@@ -172,7 +189,6 @@ $env:LIBRAS_CAMERA=1; python scripts/executar.py  # Windows (PowerShell)
 ```
 src/libras/   lógica reutilizável (módulos da aplicação)
 scripts/      programas executados pelo usuário
-config/       frases.json (combinações de palavras -> português)
 data/raw/     amostras gravadas, uma pasta por sinal
 models/       modelos do MediaPipe e classificador treinado
 reports/      métricas e gráficos gerados

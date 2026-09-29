@@ -122,6 +122,9 @@ Vis-oLibras/
 │       ├── classificador.py     # carregar modelo, prever (sinal, confiança)
 │       ├── estabilizador.py     # regras anti-repetição (máquina de estados)
 │       ├── reconhecedor.py      # buffer + classificador + estabilizador, frame a frame (sem câmera)
+│       ├── pipeline.py          # frame -> landmarks -> reconhecimento -> imagem (usado pelas 2 interfaces)
+│       ├── captura.py           # câmera + pipeline em thread separada (a interface não trava)
+│       ├── interface.py         # interface gráfica (CustomTkinter)
 │       ├── frase.py             # acumular palavras, formar frase, dicionário de frases
 │       ├── voz.py               # TTS em thread com fila
 │       ├── desenho.py           # desenhar landmarks, texto, FPS, barra de confiança
@@ -136,10 +139,8 @@ Vis-oLibras/
 │   ├── treinar_modelo.py        # treina e salva o modelo
 │   ├── comparar_features.py     # compara features v1 (posição) x v2 (+ movimento) no seu dataset
 │   ├── avaliar_modelo.py        # relatório de precisão + matriz de confusão
-│   └── executar.py              # aplicação em tempo real
-│
-├── config/
-│   └── frases.json              # combinações de palavras → frase em português
+│   ├── executar.py              # aplicação em tempo real (janela OpenCV)
+│   └── app.py                   # aplicação de demonstração (interface gráfica)
 │
 ├── data/
 │   ├── raw/                     # uma pasta por sinal, um .npy por amostra

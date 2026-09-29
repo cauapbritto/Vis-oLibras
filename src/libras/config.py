@@ -36,9 +36,6 @@ ARQ_CLASSES = DIR_MODELOS / "classes.json"  # rótulos na ordem das saídas do m
 ARQ_HAND_LANDMARKER = DIR_MODELOS / "hand_landmarker.task"
 ARQ_POSE_LANDMARKER = DIR_MODELOS / "pose_landmarker_lite.task"
 
-DIR_CONFIG = RAIZ_PROJETO / "config"
-ARQ_FRASES = DIR_CONFIG / "frases.json"
-
 DIR_REPORTS = RAIZ_PROJETO / "reports"
 
 # Links oficiais dos modelos do MediaPipe (baixados para a pasta models/)
@@ -258,8 +255,10 @@ EXIGIR_LIBERACAO = True
 # Formação de frases
 # =============================================================================
 
-PAUSA_FRASE_S = 2.5  # segundos sem novas palavras para encerrar a frase
-MAX_PALAVRAS = 8     # limite de palavras por frase
+PAUSA_FRASE_S = 2.5        # segundos sem novas palavras para encerrar a frase
+FINALIZAR_POR_PAUSA = True # False: a frase só é encerrada pelo botão/tecla
+MAX_PALAVRAS = 8           # limite de palavras por frase
+JANELA_REPETICAO_S = 1.5   # mesma palavra de novo em menos que isso = repetição involuntária
 
 # =============================================================================
 # Teclas da aplicação em tempo real (além de Q/ESC para sair)
@@ -273,9 +272,13 @@ TECLAS_FINALIZAR = (" ",)         # ESPAÇO: encerra a frase agora
 # Voz (Text-to-Speech)
 # =============================================================================
 
-IDIOMA_VOZ = "pt"           # escolhe uma voz do sistema cujo idioma contenha isto
-TAXA_FALA = 170             # velocidade da fala (palavras por minuto, aprox.)
-FALAR_CADA_PALAVRA = False  # True: fala também cada palavra ao ser reconhecida
+# Voz offline e gratuita: pyttsx3 (Windows: SAPI5; Linux: eSpeak) e, no macOS,
+# o comando "say" do sistema (o pyttsx3 trava fora da thread principal no Mac).
+IDIOMAS_VOZ = ("pt-br", "pt_br", "brazil", "pt")  # preferência, do mais específico
+TAXA_FALA = 170              # velocidade da fala (palavras por minuto, aprox.)
+FALAR_AO_FINALIZAR = True    # fala a frase quando ela é encerrada
+FALAR_CADA_PALAVRA = False   # True: fala também cada palavra ao ser confirmada
+POLITICA_VOZ = "ignorar"     # fala pedida durante outra: "ignorar" ou "enfileirar"
 
 
 # =============================================================================

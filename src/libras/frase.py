@@ -1,88 +1,137 @@
-"""Sequência de palavras reconhecidas -> frase em português.
+"""Gerenciador de sentença: organiza os sinais reconhecidos em uma sequência.
 
-- Cada palavra aceita pelo estabilizador entra na sequência.
-- Uma pausa de PAUSA_FRASE_S sem novas palavras encerra a frase (na Fase 6 ela
-  será falada). ESPAÇO encerra na hora; BACKSPACE apaga a última; C limpa.
-- config/frases.json traduz combinações conhecidas ("BOM DIA" -> "Bom dia!").
-  O MVP não faz tradução gramatical: o resto é exibido palavra por palavra.
+Independente da visão computacional: recebe palavras (strings) e tempos, então
+funciona igual na interface gráfica, no modo OpenCV e nos testes.
+
+Quatro estados diferentes, que a interface mostra separadamente:
+
+    sinal_atual         o que o modelo está vendo AGORA (ainda não confirmado)
+    ultimo_confirmado   a última palavra aceita pelo estabilizador
+    palavras            a sequência confirmada da frase em construção
+    frase_final         a última frase encerrada (a que é falada)
+
+O MVP NÃO traduz Libras para português: a frase é a própria sequência de sinais
+(glosa), na ordem em que foram feitos - "EU NOME CAUA". Libras tem gramática
+própria, e uma tradução correta exige regras linguísticas validadas.
+
+A arquitetura está preparada para isso: `regras` é uma lista de funções
+palavras -> palavras aplicada antes de montar o texto. Exemplo de regra futura
+(só inclua regras validadas com quem conhece Libras):
+
+    def juntar_bom_dia(palavras):   # ["BOM", "DIA"] -> ["BOM DIA"]
+        ...
+    GerenciadorSentenca(regras=[juntar_bom_dia])
 """
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
+from typing import Callable
 
 from libras import config
 
-
-def carregar_frases(caminho: Path = config.ARQ_FRASES) -> dict[tuple[str, ...], str]:
-    """{("BOM", "DIA"): "Bom dia!", ...}. Arquivo ausente = dicionário vazio."""
-    if not caminho.is_file():
-        return {}
-    dados = json.loads(caminho.read_text(encoding="utf-8"))
-    return {tuple(config.identificador_sinal(p) for p in chave.split()): texto
-            for chave, texto in dados.items()}
+RegraTexto = Callable[[list[str]], list[str]]
 
 
-def traduzir(palavras: list[str], frases: dict[tuple[str, ...], str]) -> str:
-    """Substitui, da esquerda para a direita, a MAIOR combinação conhecida.
-    ["OI", "BOM", "DIA", "EU"] -> "Oi, bom dia! Eu"."""
-    maior = max((len(k) for k in frases), default=1)
-    partes, i = [], 0
-    while i < len(palavras):
-        for tamanho in range(min(maior, len(palavras) - i), 0, -1):
-            trecho = tuple(palavras[i:i + tamanho])
-            if trecho in frases:
-                partes.append(frases[trecho])
-                i += tamanho
-                break
-        else:
-            partes.append(config.rotulo_exibicao(palavras[i]).lower())
-            i += 1
-    texto = " ".join(partes)
-    return texto[:1].upper() + texto[1:]
-
-
-class Frase:
-    def __init__(self, frases: dict[tuple[str, ...], str] | None = None,
-                 pausa_s: float = config.PAUSA_FRASE_S, max_palavras: int = config.MAX_PALAVRAS) -> None:
-        self.frases = carregar_frases() if frases is None else frases
+class GerenciadorSentenca:
+    def __init__(
+        self,
+        ao_finalizar: Callable[[str], None] | None = None,
+        regras: list[RegraTexto] | None = None,
+        janela_repeticao_s: float = config.JANELA_REPETICAO_S,
+        pausa_s: float = config.PAUSA_FRASE_S,
+        max_palavras: int = config.MAX_PALAVRAS,
+    ) -> None:
+        """`ao_finalizar(texto)` é chamado sempre que uma frase é encerrada
+        (manualmente, por pausa ou por estar cheia) - ex.: mostrar e falar."""
+        self.ao_finalizar = ao_finalizar
+        self.regras = regras or []
+        self.janela_repeticao_s = janela_repeticao_s
         self.pausa_s = pausa_s
         self.max_palavras = max_palavras
+
+        self.sinal_atual: str | None = None
+        self.confianca_atual = 0.0
+        self.ultimo_confirmado: str | None = None
+        self.momento_ultimo = float("-inf")
         self.palavras: list[str] = []
-        self.momento_ultima = 0.0
-        self.ultima_frase = ""  # a última frase encerrada (continua visível na tela)
+        self.frase_final = ""
 
-    def adicionar(self, palavra: str, agora: float) -> str | None:
-        """Acrescenta a palavra. Se a frase já estava cheia, ela é encerrada antes
-        e o texto dela é devolvido."""
-        encerrada = self.finalizar() if len(self.palavras) >= self.max_palavras else None
+    # --- sinal atual (não confirmado) --------------------------------------
+
+    def atualizar_deteccao(self, sinal: str | None, confianca: float = 0.0) -> None:
+        """O que o modelo está vendo agora. NÃO entra na sequência."""
+        self.sinal_atual = None if sinal == config.CLASSE_NADA else sinal
+        self.confianca_atual = confianca if self.sinal_atual else 0.0
+
+    # --- sequência ----------------------------------------------------------
+
+    def adicionar(self, palavra: str, agora: float) -> bool:
+        """Acrescenta uma palavra confirmada. Devolve False se ela foi ignorada:
+        vazia, "nenhum sinal" ou repetição involuntária (a mesma palavra de novo
+        em menos de `janela_repeticao_s` segundos). O estabilizador já evita a
+        maioria das repetições; esta é uma segunda proteção, independente dele."""
+        palavra = palavra.strip() if palavra else ""
+        if not palavra or palavra == config.CLASSE_NADA:
+            return False
+        if (palavra == self.ultimo_confirmado and self.palavras
+                and agora - self.momento_ultimo < self.janela_repeticao_s):
+            return False
+        if len(self.palavras) >= self.max_palavras:
+            self.finalizar()
         self.palavras.append(palavra)
-        self.momento_ultima = agora
-        return encerrada
+        self.ultimo_confirmado, self.momento_ultimo = palavra, agora
+        return True
 
-    def remover_ultima(self) -> None:
-        if self.palavras:
-            self.palavras.pop()
-
-    def limpar(self) -> None:
-        self.palavras.clear()
-        self.ultima_frase = ""
-
-    def glosa(self) -> str:
-        """Palavras como reconhecidas: 'OI · BOM · DIA'."""
-        return " · ".join(config.rotulo_exibicao(p) for p in self.palavras)
-
-    def texto(self) -> str:
-        return traduzir(self.palavras, self.frases)
-
-    def pausa_detectada(self, agora: float) -> bool:
-        return bool(self.palavras) and agora - self.momento_ultima >= self.pausa_s
-
-    def finalizar(self) -> str | None:
-        """Encerra a frase atual e devolve o texto em português (None se vazia)."""
+    def remover_ultima(self) -> str | None:
+        """Remove e devolve a última palavra da sequência (None se vazia)."""
         if not self.palavras:
             return None
-        self.ultima_frase = self.texto()
+        removida = self.palavras.pop()
+        self.ultimo_confirmado = self.palavras[-1] if self.palavras else None
+        return removida
+
+    def limpar(self) -> None:
+        """Limpa tudo: sequência, último confirmado e frase final."""
         self.palavras.clear()
-        return self.ultima_frase
+        self.ultimo_confirmado = None
+        self.momento_ultimo = float("-inf")
+        self.frase_final = ""
+
+    # --- frase ----------------------------------------------------------------
+
+    def finalizar(self) -> str | None:
+        """Encerra a frase em construção; devolve o texto (None se vazia)."""
+        if not self.palavras:
+            return None
+        self.frase_final = self.frase_atual
+        self.palavras.clear()
+        if self.ao_finalizar:
+            self.ao_finalizar(self.frase_final)
+        return self.frase_final
+
+    def pausa_detectada(self, agora: float) -> bool:
+        return bool(self.palavras) and agora - self.momento_ultimo >= self.pausa_s
+
+    def verificar_pausa(self, agora: float) -> str | None:
+        """Encerra a frase se passou `pausa_s` sem palavras novas."""
+        return self.finalizar() if self.pausa_detectada(agora) else None
+
+    # --- textos para a tela e para a voz --------------------------------------
+
+    @property
+    def sequencia(self) -> list[str]:
+        """Palavras como devem aparecer na tela ("NAO" -> "NÃO")."""
+        return [config.rotulo_exibicao(p) for p in self.palavras]
+
+    @property
+    def frase_atual(self) -> str:
+        """A frase em construção: a sequência (após as regras), em ordem."""
+        palavras = list(self.palavras)
+        for regra in self.regras:
+            palavras = regra(palavras)
+        return " ".join(config.rotulo_exibicao(p) for p in palavras)
+
+    @staticmethod
+    def texto_para_fala(frase: str) -> str:
+        """Minúsculas: sintetizadores leem palavras em MAIÚSCULAS como siglas."""
+        return frase.lower()
