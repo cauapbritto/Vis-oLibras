@@ -27,8 +27,11 @@ def sinais_confundidos(matriz: np.ndarray, classes: list[str]) -> list[dict]:
 
 
 def salvar_matriz_confusao(matriz: np.ndarray, classes: list[str], titulo: str,
-                           nome_arquivo: str = "matriz_confusao.png") -> str:
-    """Salva a matriz de confusão (linhas = sinal real, colunas = previsto) em reports/."""
+                           nome_arquivo: str = "matriz_confusao.png",
+                           colunas: list[str] | None = None, pasta=None) -> str:
+    """Salva a matriz de confusão (linhas = sinal real, colunas = previsto).
+    `colunas` permite colunas extras (ex.: "(nenhum)"); `pasta` padrão: reports/."""
+    colunas = colunas or classes
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -41,17 +44,18 @@ def salvar_matriz_confusao(matriz: np.ndarray, classes: list[str], titulo: str,
     totais = matriz.sum(axis=1, keepdims=True)
     fracao = np.divide(matriz, totais, out=np.zeros(matriz.shape, dtype=float), where=totais > 0)
     rotulos = [config.rotulo_exibicao(c) for c in classes]
+    rotulos_colunas = [config.rotulo_exibicao(c) for c in colunas]
 
     tamanho = 2.5 + 0.62 * len(classes)
-    fig, ax = plt.subplots(figsize=(tamanho + 1.6, tamanho))
+    fig, ax = plt.subplots(figsize=(2.5 + 0.62 * len(colunas) + 1.6, tamanho))
     imagem = ax.imshow(fracao, cmap=LinearSegmentedColormap.from_list("azul", RAMPA_SEQUENCIAL),
                        vmin=0, vmax=1)
     for i in range(len(classes)):
-        for j in range(len(classes)):
+        for j in range(len(colunas)):
             if matriz[i, j]:
                 ax.text(j, i, str(matriz[i, j]), ha="center", va="center", fontsize=9,
                         color="#ffffff" if fracao[i, j] > 0.5 else TEXTO)
-    ax.set_xticks(range(len(classes)), rotulos, rotation=45, ha="right")
+    ax.set_xticks(range(len(colunas)), rotulos_colunas, rotation=45, ha="right")
     ax.set_yticks(range(len(classes)), rotulos)
     ax.set_xlabel("Sinal previsto pelo modelo")
     ax.set_ylabel("Sinal real")
@@ -62,8 +66,10 @@ def salvar_matriz_confusao(matriz: np.ndarray, classes: list[str], titulo: str,
                  label="fração das amostras do sinal real").ax.yaxis.set_major_formatter(
         matplotlib.ticker.PercentFormatter(1.0))
     fig.tight_layout()
-    config.DIR_REPORTS.mkdir(parents=True, exist_ok=True)
-    caminho = config.DIR_REPORTS / nome_arquivo
+    from pathlib import Path
+    pasta = Path(pasta) if pasta is not None else config.DIR_REPORTS
+    pasta.mkdir(parents=True, exist_ok=True)
+    caminho = pasta / nome_arquivo
     fig.savefig(caminho, dpi=120)
     plt.close(fig)
     return str(caminho)

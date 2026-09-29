@@ -141,7 +141,8 @@ Vis-oLibras/
 │   │
 │   │   DESENVOLVIMENTO (modo treinamento)
 │   ├── dataset.py               # gravar, ler, validar e analisar amostras
-│   └── avaliacao.py             # sinais confundidos e matriz de confusão
+│   ├── avaliacao.py             # sinais confundidos e matriz de confusão
+│   └── experimento.py           # testes controlados: tentativas, CSV e resumo estatístico
 │
 ├── scripts/
 │   ├── demonstracao/            # MODO USUÁRIO
@@ -155,6 +156,8 @@ Vis-oLibras/
 │       ├── treinar_modelo.py    # compara RF/SVM/MLP, avalia e salva o modelo
 │       ├── avaliar_modelo.py    # avalia o modelo salvo (ex.: com uma pessoa nova)
 │       ├── comparar_features.py # features v1 (posição) × v2 (+ movimento)
+│       ├── teste_controlado.py  # participantes fazem cada sinal N vezes; grava CSV
+│       ├── resumir_testes.py    # métricas dos testes controlados (txt, json, csv, png)
 │       ├── empacotar_app.py     # gera o zip do modo usuário (dist/Vis-oLibras-demo.zip)
 │       └── visualizar_amostra.py# (a implementar) reproduz uma amostra gravada
 │
@@ -164,7 +167,7 @@ Vis-oLibras/
 │   └── metadata.csv
 ├── models/                      # (os dois modos) .task do MediaPipe + classificador treinado
 ├── reports/                     # (desenvolvimento) métricas e gráficos
-├── docs/                        # arquitetura e descrição dos sinais
+├── docs/                        # arquitetura, sinais, testes (TESTES.md) e checklist da demonstração
 └── tests/                       # testes (inclui test_modos.py, que garante a separação)
 ```
 
@@ -612,27 +615,25 @@ aplicadas antes de montar o texto, para regras validadas no futuro.
 - A matriz mostra quais sinais se confundem (ex.: EU × MEU) → orienta regravação ou
   mudança de features.
 
-### 12.2 Precisão em tempo real (protocolo de teste manual)
+### 12.2 Precisão em tempo real (testes controlados)
 
-O que importa na prática é o sistema completo (com estabilizador). Protocolo:
+`teste_controlado.py` conduz o protocolo e registra tudo em CSV: cada participante faz cada
+sinal N vezes (padrão 10) em ordem aleatória com semente registrada; opcionalmente,
+tentativas de "não sinalizar" (`--incluir-nada`) medem falsos positivos. Cada tentativa:
+contagem com as mãos abaixadas → "JÁ!" (estabilizador zerado, a janela de frames é mantida
+como no uso normal) → primeira palavra aceita ou tempo esgotado (5 s) → resultado (D
+descarta erros do participante). `resumir_testes.py` calcula as métricas **apenas** com as
+tentativas registradas. Os metadados da sessão (semente, modelo, limiares) ficam em
+`<sessao>_sessao.json`.
 
-1. Cada participante faz **cada sinal 10 vezes**, em ordem aleatória, e 1 minuto
-   **sem sinalizar** (conversando/gesticulando).
-2. Registrar numa planilha: acerto, erro (qual palavra saiu), não detectado.
-3. Calcular: **taxa de acerto**, **taxa de não detecção** e **falsos positivos por minuto**
-   (palavras emitidas no minuto sem sinalizar).
+### 12.3 Tempo de resposta e desempenho
 
-### 12.3 Tempo de resposta (`metricas.py`)
-
-Cronometrar cada etapa com `time.perf_counter()` e gravar em `reports/latencia_<data>.csv`:
-
-| Métrica | Como medir |
+| Métrica | Como é medida |
 |---|---|
-| **FPS** | média móvel de frames processados por segundo |
-| Tempo MediaPipe (ms/frame) | antes/depois de `extrator.extrair` |
-| Tempo de inferência (ms) | antes/depois de `classificador.prever` |
-| Tempo total por frame (ms) | início ao fim de cada iteração do laço |
-| **Latência sinal→texto** | do momento em que a mão "para" (fim do movimento) até a palavra aparecer — aproximado pelo tempo entre a 1.ª previsão correta e a emissão pelo estabilizador + metade da janela |
+| **Tempo de resposta** | do "JÁ!" até a palavra ser aceita (inclui o tempo de reação da pessoa) |
+| **Latência do sistema** | do 1º frame com mãos após o "JÁ!" até a palavra ser aceita |
+| **FPS** | média móvel dos últimos 30 frames, média por tentativa |
+| **Tempo de inferência** | só dos frames em que o modelo rodou (`EstadoReconhecimento.inferiu`) |
 
 ### 12.4 Metas do MVP
 

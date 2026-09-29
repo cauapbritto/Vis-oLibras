@@ -53,6 +53,12 @@ class PipelineVisao:
         desenhar_maos(frame, resultado)
         return QuadroProcessado(frame, resultado, estado, self._fps.atualizar(agora), agora)
 
+    def reiniciar_estabilizador(self) -> None:
+        """Esquece a última palavra aceita (e o cooldown), mas mantém a janela de
+        frames - como acontece no uso normal, em que a janela nunca começa vazia."""
+        if self.reconhecedor is not None:
+            self.reconhecedor.estabilizador.reiniciar()
+
     def limpar(self) -> None:
         """Esquece a janela atual e o histórico do estabilizador."""
         if self.reconhecedor is not None:

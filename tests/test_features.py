@@ -103,3 +103,41 @@ def test_formato_invalido_gera_erro():
 def test_reamostragem_uniforme_no_tempo():
     tempos = np.array([0.0, 0.1, 0.2, 0.9, 1.0])
     np.testing.assert_array_equal(indices_reamostragem(tempos, 3), [0, 2, 4])
+
+
+def test_duas_maos_preenchem_os_dois_blocos():
+    vetor = janela_para_vetor(amostra(esquerda=True), versao=1).reshape(config.T_FRAMES, config.TAM_FEATURES_FRAME)
+    bloco = config.TAM_FORMA_MAO + config.TAM_POSICAO_MAO
+    assert vetor[:, :bloco].any() and vetor[:, bloco:2 * bloco].any()
+    np.testing.assert_array_equal(vetor[:, -2:], np.ones((config.T_FRAMES, 2)))
+
+
+def test_so_a_mao_esquerda():
+    frames = np.stack([linha(t, esquerda=mao((0.8, 0.6))) for t in np.linspace(0, 1.5, 45)])
+    vetor = janela_para_vetor(frames, versao=1).reshape(config.T_FRAMES, config.TAM_FEATURES_FRAME)
+    bloco = config.TAM_FORMA_MAO + config.TAM_POSICAO_MAO
+    assert not vetor[:, :bloco].any() and vetor[:, bloco:2 * bloco].any()
+    np.testing.assert_array_equal(vetor[:, -2:], np.tile([0.0, 1.0], (config.T_FRAMES, 1)))
+
+
+def test_sem_nenhuma_mao_o_vetor_existe_e_e_zero_nas_maos():
+    frames = np.stack([linha(t) for t in np.linspace(0, 1.5, 45)])
+    vetor = janela_para_vetor(frames)
+    assert vetor.shape == (config.TAM_FEATURES_JANELA,) and not vetor.any()
+
+
+def test_coleta_e_tempo_real_geram_o_mesmo_vetor(dataset_vazio):
+    """A amostra gravada pelo coletor e a mesma sequência vista no tempo real
+    (buffer com timestamps absolutos) precisam gerar exatamente o mesmo vetor."""
+    from libras import dataset
+    from libras.features import BufferJanela
+
+    frames = amostra(esquerda=True, ruido=0.02)
+    frames[:, config.COL_TIMESTAMP] += 1000.0          # tempo real: relógio absoluto
+    buffer = BufferJanela(duracao=10.0, duracao_minima=1.0)
+    for l in frames:
+        buffer.adicionar(l)
+    gravada = frames.copy()
+    gravada[:, config.COL_TIMESTAMP] -= gravada[0, config.COL_TIMESTAMP]   # como o coletor salva
+    caminho = dataset.salvar_amostra(gravada, "OI", "ana")
+    np.testing.assert_allclose(buffer.vetor(), janela_para_vetor(np.load(caminho)), atol=1e-5)

@@ -10,6 +10,7 @@ Uso:
     python scripts/desenvolvimento/comparar_features.py
 """
 
+import argparse
 import sys
 from collections import Counter
 
@@ -26,6 +27,7 @@ from libras.features import janela_para_vetor
 
 
 def main() -> int:
+    argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter).parse_args()
     validas = [a for a in dataset.ler_amostras() if a.valida]
     contagem = Counter(a.sinal for a in validas)
     if len(contagem) < 2 or min(contagem.values()) < 3:

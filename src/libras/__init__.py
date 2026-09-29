@@ -18,4 +18,4 @@ __version__ = "0.2.0"
 MODULOS_NUCLEO = ("config", "camera", "extrator", "features", "temporal", "desenho", "metricas")
 MODULOS_APLICACAO = ("classificador", "estabilizador", "reconhecedor", "frase", "voz",
                      "pipeline", "captura", "interface", "__main__")
-MODULOS_DESENVOLVIMENTO = ("dataset", "avaliacao")
+MODULOS_DESENVOLVIMENTO = ("dataset", "avaliacao", "experimento")

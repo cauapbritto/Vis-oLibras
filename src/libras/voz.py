@@ -134,10 +134,17 @@ class Voz:
     def __init__(self, criar_motor: Callable[[], Motor] = criar_motor_padrao,
                  politica: str = config.POLITICA_VOZ,
                  ao_erro: Callable[[str], None] | None = None,
-                 timeout_inicio: float = 10.0) -> None:
+                 timeout_inicio: float = 10.0,
+                 recriar_motor_por_fala: bool | None = None) -> None:
+        """`ao_erro` é chamado NA THREAD DA VOZ: não mexa em widgets dentro dele.
+        `recriar_motor_por_fala`: None = automático (sim no Windows com o motor
+        padrão, porque o pyttsx3/SAPI5 às vezes só fala a primeira frase)."""
         if politica not in ("ignorar", "enfileirar"):
             raise ValueError("politica deve ser 'ignorar' ou 'enfileirar'")
         self._criar_motor = criar_motor
+        if recriar_motor_por_fala is None:
+            recriar_motor_por_fala = platform.system() == "Windows" and criar_motor is criar_motor_padrao
+        self.recriar_motor_por_fala = recriar_motor_por_fala
         self.politica = politica
         self.ao_erro = ao_erro
         self.disponivel = False
@@ -200,6 +207,8 @@ class Voz:
                 self._registrar_erro(f"erro ao falar: {erro}")
                 motor = None  # recria na próxima fala
             finally:
+                if self.recriar_motor_por_fala:
+                    motor = None  # o próximo pedido cria um motor novo
                 if self._fila.empty():
                     self._falando.clear()
 

@@ -8,6 +8,7 @@ Uso:
     python scripts/desenvolvimento/construir_dataset.py
 """
 
+import argparse
 import sys
 from collections import Counter
 
@@ -18,6 +19,7 @@ from libras import config, dataset
 
 
 def main() -> int:
+    argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter).parse_args()
     try:
         dados, invalidas = dataset.construir_dados_treino()
     except dataset.ErroDataset as erro:

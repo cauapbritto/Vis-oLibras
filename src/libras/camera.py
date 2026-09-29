@@ -12,6 +12,9 @@ Uso típico:
 
 from __future__ import annotations
 
+import platform
+import time
+
 import cv2
 import numpy as np
 
@@ -46,8 +49,18 @@ class Camera:
         self._captura: cv2.VideoCapture | None = None
         self._falhas_seguidas = 0
 
+    def _abrir_captura(self) -> cv2.VideoCapture:
+        """No Windows, o DirectShow abre a webcam bem mais rápido que o backend
+        padrão (MSMF, que pode levar vários segundos); se falhar, usa o padrão."""
+        if platform.system() == "Windows":
+            captura = cv2.VideoCapture(self.indice, cv2.CAP_DSHOW)
+            if captura.isOpened():
+                return captura
+            captura.release()
+        return cv2.VideoCapture(self.indice)
+
     def abrir(self) -> None:
-        captura = cv2.VideoCapture(self.indice)
+        captura = self._abrir_captura()
         if not captura.isOpened():
             captura.release()
             raise ErroCamera(
@@ -78,6 +91,7 @@ class Camera:
         ok, frame = self._captura.read()
         if not ok or frame is None:
             self._falhas_seguidas += 1
+            time.sleep(0.01)  # evita esgotar as tentativas em milissegundos num soluço do USB
             if self._falhas_seguidas >= self.max_falhas:
                 raise ErroCamera(
                     f"A câmera parou de enviar imagens ({self._falhas_seguidas} falhas "

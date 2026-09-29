@@ -101,6 +101,7 @@ def test_pacote_de_demonstracao_so_leva_o_necessario(tmp_path):
     arquivos = {a.as_posix() for a in empacotar.arquivos_do_pacote(RAIZ)}
     assert "src/libras/interface.py" in arquivos and "scripts/demonstracao/app.py" in arquivos
     assert "requirements.txt" in arquivos
-    for proibido in ("src/libras/dataset.py", "src/libras/avaliacao.py", "requirements-dev.txt"):
+    for proibido in ("src/libras/dataset.py", "src/libras/avaliacao.py", "src/libras/experimento.py",
+                     "requirements-dev.txt"):
         assert proibido not in arquivos
     assert not any(a.startswith(("data/", "reports/", "tests/", "scripts/desenvolvimento/")) for a in arquivos)

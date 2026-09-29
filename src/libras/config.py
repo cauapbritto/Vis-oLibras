@@ -37,6 +37,7 @@ ARQ_HAND_LANDMARKER = DIR_MODELOS / "hand_landmarker.task"
 ARQ_POSE_LANDMARKER = DIR_MODELOS / "pose_landmarker_lite.task"
 
 DIR_REPORTS = RAIZ_PROJETO / "reports"
+DIR_TESTES = DIR_REPORTS / "testes"  # CSVs dos testes controlados (teste_controlado.py)
 
 # Links oficiais dos modelos do MediaPipe (baixados para a pasta models/)
 URL_HAND_LANDMARKER = (
@@ -86,11 +87,20 @@ ROTULOS_EXIBICAO = {
 
 # Índice da webcam (0 = câmera padrão). Pode ser trocado sem editar este
 # arquivo, com a variável de ambiente LIBRAS_CAMERA (ex.: LIBRAS_CAMERA=1).
-INDICE_CAMERA = int(os.environ.get("LIBRAS_CAMERA", "0"))
+def _indice_camera_do_ambiente() -> int:
+    valor = os.environ.get("LIBRAS_CAMERA", "0")
+    try:
+        return int(valor)
+    except ValueError:
+        print(f"[AVISO] LIBRAS_CAMERA='{valor}' não é um número; usando a câmera 0.")
+        return 0
+
+
+INDICE_CAMERA = _indice_camera_do_ambiente()
 LARGURA_CAMERA = 640
 ALTURA_CAMERA = 480
 ESPELHAR_IMAGEM = True  # mostra a imagem como um espelho (mais natural)
-MAX_FALHAS_LEITURA = 30  # falhas seguidas de leitura antes de considerar a câmera perdida
+MAX_FALHAS_LEITURA = 50  # falhas seguidas (~10 ms entre elas) antes de considerar a câmera perdida
 
 # =============================================================================
 # MediaPipe
@@ -267,6 +277,15 @@ JANELA_REPETICAO_S = 1.5   # mesma palavra de novo em menos que isso = repetiç�
 TECLAS_LIMPAR = ("c", "C")        # limpa a sequência atual
 TECLAS_APAGAR_ULTIMA = ("\x08", "\x7f")  # BACKSPACE (Windows/Linux e macOS)
 TECLAS_FINALIZAR = (" ",)         # ESPAÇO: encerra a frase agora
+
+# =============================================================================
+# Testes controlados (scripts/desenvolvimento/teste_controlado.py)
+# =============================================================================
+
+TESTE_REPETICOES = 10     # vezes que cada participante faz cada sinal
+TESTE_CONTAGEM_S = 2.0    # contagem regressiva antes de cada tentativa
+TESTE_JANELA_S = 5.0      # tempo máximo para o sinal ser reconhecido
+TESTE_RESULTADO_S = 1.5   # tempo mostrando o resultado (D descarta nesse intervalo)
 
 # =============================================================================
 # Voz (Text-to-Speech)

@@ -112,4 +112,8 @@ def carregar_classificador() -> Classificador:
     if faltando:
         warnings.warn(f"o modelo não conhece os sinais {faltando}; grave amostras e treine novamente",
                       stacklevel=2)
+    extras = sorted(set(classes) - set(config.CLASSES))
+    if extras:
+        warnings.warn(f"o modelo reconhece sinais que não estão em config.CLASSES: {extras}; "
+                      "eles aparecerão com o próprio identificador", stacklevel=2)
     return Classificador(ajustar_para_tempo_real(modelo), info)

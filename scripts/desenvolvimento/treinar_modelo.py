@@ -80,7 +80,12 @@ def comparar(nomes: list[str], X: np.ndarray, y: np.ndarray, mostrar=print) -> d
     for nome in nomes:
         descricao, pipeline = candidatos()[nome]
         inicio = time.perf_counter()
-        notas = cross_val_score(pipeline, X, y, cv=folds, scoring="f1_macro", n_jobs=1)
+        try:
+            notas = cross_val_score(pipeline, X, y, cv=folds, scoring="f1_macro", n_jobs=1,
+                                    error_score="raise")
+        except ValueError as erro:  # ex.: SVM calibrado com poucas amostras por sinal
+            mostrar(f"  {descricao:<36} ignorado: {str(erro).strip().splitlines()[0][:70]}")
+            continue
         resultados[nome] = {"descricao": descricao, "f1_macro_media": float(notas.mean()),
                             "f1_macro_desvio": float(notas.std()), "folds": n_folds,
                             "tempo_s": time.perf_counter() - inicio}
@@ -96,7 +101,10 @@ def testar_pessoas_novas(pipeline: Pipeline, dados: dataset.DadosTreino) -> dict
         teste = dados.pessoas == pessoa
         if len(set(dados.y[~teste])) < 2:
             continue
-        modelo = clone(pipeline).fit(dados.X[~teste], dados.y[~teste])
+        try:
+            modelo = clone(pipeline).fit(dados.X[~teste], dados.y[~teste])
+        except ValueError:  # poucas amostras sem essa pessoa para este algoritmo
+            continue
         previsto = modelo.predict(dados.X[teste])
         resultados[pessoa] = {"amostras": int(teste.sum()),
                               "accuracy": float(accuracy_score(dados.y[teste], previsto)),

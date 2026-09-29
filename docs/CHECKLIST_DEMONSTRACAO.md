@@ -1,0 +1,23 @@
+# Checklist do dia da apresentação
+
+## Na véspera
+- [ ] Modelo treinado e avaliado (`treinar_modelo.py`, `avaliar_modelo.py`)
+- [ ] `python scripts/desenvolvimento/empacotar_app.py` e copiar o zip para o computador da apresentação (e para um pen drive)
+- [ ] No computador da apresentação: instalar (`LEIA-ME.txt` do zip) e rodar uma vez **sem internet**
+- [ ] Voz em português instalada (Windows: Configurações → Idioma → Português (Brasil) com fala)
+- [ ] Checklist manual (`docs/TESTES.md`, seção 2) feito no local ou com luz parecida
+
+## 30 minutos antes
+- [ ] Fechar Zoom, Teams, navegador com câmera e outros programas pesados
+- [ ] Computador na tomada (modo de energia "desempenho")
+- [ ] Posicionar a câmera: pessoa a ~1 m, ombros e mãos visíveis, luz de frente
+- [ ] Abrir `python scripts/demonstracao/app.py` → Câmera: OK · Modelo: carregado · Voz: pronta
+- [ ] Fazer 2 sinais de teste e finalizar uma frase (conferir o som)
+- [ ] Limpar a frase antes de começar
+
+## Durante
+- Entre um sinal e outro, **abaixar as mãos** (é assim que o sistema separa as palavras)
+- Sinal errado: **Remover última palavra** (ou Backspace)
+- Frase pronta: **Finalizar frase** (ou Espaço) → aparece e é falada
+- Se travar ou a câmera sumir: **Parar câmera** → **Iniciar câmera**; em último caso, fechar e abrir de novo
+- Plano B: vídeo/GIF gravado antes da demonstração funcionando

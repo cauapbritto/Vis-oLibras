@@ -23,9 +23,8 @@ from libras import config, dataset
 from libras.dataset import PERFIS_MAOS, RelatorioDataset
 
 # Paleta validada (skill dataviz, modo claro)
-SUPERFICIE = "#fcfcfb"
-TEXTO = "#0b0b0b"
-TEXTO_SECUNDARIO = "#52514e"
+from libras.avaliacao import SUPERFICIE, TEXTO, TEXTO_SECUNDARIO  # noqa: E402
+
 GRADE = "#e4e3df"
 COR_SERIE = "#2a78d6"
 COR_CRITICO = "#d03b3b"

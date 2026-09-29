@@ -31,6 +31,7 @@ class EstadoReconhecimento:
     palavra: str | None = None     # palavra ACEITA neste frame (quase sempre None)
     aviso: str | None = None       # ex.: ombros não visíveis
     tempo_inferencia_ms: float = 0.0
+    inferiu: bool = False          # o modelo rodou NESTE frame (tempo_inferencia_ms é deste frame)
 
 
 class Reconhecedor:
@@ -72,6 +73,7 @@ class Reconhecedor:
             inicio = time.perf_counter()
             estado.sinal, estado.confianca = self.classificador.prever(vetor)
             estado.tempo_inferencia_ms = (time.perf_counter() - inicio) * 1000
+            estado.inferiu = True
 
         estado.palavra = self.estabilizador.atualizar(estado.sinal, estado.confianca, agora)
         if estado.palavra:

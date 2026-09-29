@@ -24,12 +24,13 @@ from PIL import Image, ImageDraw
 from libras import config
 from libras.captura import ProcessadorCamera
 from libras.classificador import Classificador, ErroClassificador, carregar_classificador
-from libras.desenho import _fonte, descrever_maos
+from libras.desenho import descrever_maos, fonte_com_acentos
 from libras.estabilizador import Estabilizador
 from libras.frase import GerenciadorSentenca
 from libras.voz import Voz
 
 INTERVALO_MS = 30
+ATALHOS = "Atalhos: Espaço finaliza · Backspace remove · C limpa"
 MAOS_CURTO = {"Ambas as mãos": "ambas", "Mão direita": "direita", "Mão esquerda": "esquerda"}
 TAMANHO_VIDEO = (640, 480)
 
@@ -47,7 +48,7 @@ COR_TEXTO_SECUNDARIO = ("#52514e", "#c3c2b7")
 def _imagem_parada(texto: str) -> Image.Image:
     imagem = Image.new("RGB", TAMANHO_VIDEO, (26, 26, 25))
     desenho = ImageDraw.Draw(imagem)
-    fonte = _fonte(24)
+    fonte = fonte_com_acentos(24)
     largura = desenho.textlength(texto, font=fonte) if fonte else len(texto) * 10
     desenho.text(((TAMANHO_VIDEO[0] - largura) / 2, TAMANHO_VIDEO[1] / 2 - 14), texto,
                  fill=(195, 194, 183), font=fonte)
@@ -93,7 +94,12 @@ class AplicacaoLibras(ctk.CTk):
 
         self.classificador = self._carregar_modelo()
         self.sentenca = GerenciadorSentenca(ao_finalizar=self._ao_finalizar)
-        self.voz = Voz(ao_erro=lambda m: self.after(0, self._mostrar_aviso, m))
+        # Sem callback: a thread da voz não pode mexer no Tkinter. Os erros dela
+        # são lidos em self.voz.erro, na thread da interface (_ciclo).
+        self.voz = Voz()
+        self._erro_voz_mostrado = self.voz.erro
+        self._aviso_agendado = None
+        self._aviso_atual = ""
 
         self._montar_tela()
         self._mostrar_imagem(_imagem_parada("Câmera parada — clique em Iniciar câmera"))
@@ -205,7 +211,7 @@ class AplicacaoLibras(ctk.CTk):
             ctk.CTkButton(botoes, text=texto, height=40, font=fonte, command=comando).grid(
                 row=1 + i // 2, column=i % 2, sticky="ew", padx=(0, 5) if i % 2 == 0 else (5, 0), pady=4)
 
-        self.lbl_aviso = ctk.CTkLabel(direita, text="Atalhos: Espaço finaliza · Backspace remove · C limpa",
+        self.lbl_aviso = ctk.CTkLabel(direita, text=ATALHOS,
                                       font=ctk.CTkFont(size=12), text_color=COR_TEXTO_SECUNDARIO,
                                       wraplength=440, justify="left")
         self.lbl_aviso.pack(anchor="w", pady=(10, 0))
@@ -241,6 +247,9 @@ class AplicacaoLibras(ctk.CTk):
                 self._mostrar_quadro(quadro)
         if config.FINALIZAR_POR_PAUSA:
             self.sentenca.verificar_pausa(time.perf_counter())
+        if self.voz.erro and self.voz.erro != self._erro_voz_mostrado:
+            self._erro_voz_mostrado = self.voz.erro
+            self._mostrar_aviso(f"Voz: {self.voz.erro}")
         self._atualizar_textos()
         self.after(INTERVALO_MS, self._ciclo)
 
@@ -318,9 +327,19 @@ class AplicacaoLibras(ctk.CTk):
             self.ind_voz.definir("falando..." if self.voz.falando else "pronta", COR_OK)
 
     def _mostrar_aviso(self, texto: str) -> None:
-        self.lbl_aviso.configure(text=texto, text_color=COR_ATENCAO)
-        self.after(4000, lambda: self.lbl_aviso.configure(
-            text="Atalhos: Espaço finaliza · Backspace remove · C limpa", text_color=COR_TEXTO_SECUNDARIO))
+        """Mostra um aviso por 4 s. Chamado a cada frame pelo mesmo aviso (ex.: ombros
+        fora da imagem), só renova o prazo: nunca acumula temporizadores."""
+        if self._aviso_agendado is not None:
+            self.after_cancel(self._aviso_agendado)
+        if texto != self._aviso_atual:
+            self.lbl_aviso.configure(text=texto, text_color=COR_ATENCAO)
+            self._aviso_atual = texto
+        self._aviso_agendado = self.after(4000, self._limpar_aviso)
+
+    def _limpar_aviso(self) -> None:
+        self._aviso_agendado = None
+        self._aviso_atual = ""
+        self.lbl_aviso.configure(text=ATALHOS, text_color=COR_TEXTO_SECUNDARIO)
 
     # --- frase e voz ---------------------------------------------------------------
 

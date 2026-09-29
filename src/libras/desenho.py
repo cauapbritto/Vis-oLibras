@@ -61,7 +61,7 @@ FONTES_SISTEMA = (
 
 
 @lru_cache(maxsize=8)
-def _fonte(tamanho: int):
+def fonte_com_acentos(tamanho: int):
     """Fonte com acentos para o Pillow, ou None se o Pillow não estiver disponível."""
     try:
         from PIL import ImageFont
@@ -90,7 +90,7 @@ def desenhar_legenda(frame: np.ndarray, linhas: list[tuple[str, tuple[int, int, 
     regiao = frame[y0:, :]
     frame[y0:, :] = cv2.addWeighted(regiao, 0.35, np.zeros_like(regiao), 0.65, 0)
 
-    if _fonte(linhas[0][2]) is None:  # sem Pillow: cai para o OpenCV, sem acentos
+    if fonte_com_acentos(linhas[0][2]) is None:  # sem Pillow: cai para o OpenCV, sem acentos
         y = y0 + 8
         for texto, cor, tamanho in linhas:
             y += int(tamanho * 1.35)
@@ -102,7 +102,7 @@ def desenhar_legenda(frame: np.ndarray, linhas: list[tuple[str, tuple[int, int, 
     desenho = ImageDraw.Draw(faixa)
     y = 8
     for texto, cor, tamanho in linhas:
-        fonte = _fonte(tamanho)
+        fonte = fonte_com_acentos(tamanho)
         # Texto longo demais: mostra só o final (o mais recente)
         while len(texto) > 4 and desenho.textlength(texto, font=fonte) > largura_img - 24:
             texto = "…" + texto[2:]

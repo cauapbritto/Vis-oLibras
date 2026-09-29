@@ -127,7 +127,8 @@ pytest                                   # roda os testes
 ### Fluxo
 
 ```
-testar_deteccao → coletar_dados → analisar_dataset → treinar_modelo → avaliar_modelo → empacotar_app
+testar_deteccao → coletar_dados → analisar_dataset → treinar_modelo → avaliar_modelo
+                → teste_controlado → resumir_testes → empacotar_app
 ```
 
 **1. Diagnóstico da câmera** (sem reconhecimento):
@@ -180,9 +181,43 @@ modelos antigos (v1) continuam funcionando.
 python scripts/desenvolvimento/avaliar_modelo.py --pessoa dani
 ```
 
-**6. Empacotar para a demonstração:** `python scripts/desenvolvimento/empacotar_app.py`.
+**6. Testes controlados com participantes** (métricas para o trabalho):
+
+```bash
+python scripts/desenvolvimento/teste_controlado.py --participante p01           # cada sinal 10x, ordem aleatória
+python scripts/desenvolvimento/teste_controlado.py --participante p01 --incluir-nada   # + falsos positivos
+python scripts/desenvolvimento/resumir_testes.py                                 # resumo de todos os CSVs
+```
+
+O teste mostra "Faça: SINAL", conta até o "JÁ!" e registra sinal esperado, reconhecido,
+confiança, tempo de resposta, latência, FPS e tempo de inferência — uma linha por tentativa
+em `reports/testes/<sessao>.csv`, gravada na hora (D descarta uma tentativa errada pelo
+participante). O resumo calcula accuracy, precision, recall, F1, matriz de confusão, erros
+por sinal e estatísticas de tempo **somente com as tentativas registradas**, e exporta
+`resumo.txt`, `resumo.json`, `por_classe.csv`, `matriz_confusao.csv/.png`.
+
+**7. Empacotar para a demonstração:** `python scripts/desenvolvimento/empacotar_app.py`.
+
+### Testes
+
+`pytest` roda os testes automáticos (sem webcam). O checklist manual (câmera, reconhecimento,
+iluminação, distância, sinais, voz, interface) está em [`docs/TESTES.md`](docs/TESTES.md), e
+o roteiro do dia da apresentação em
+[`docs/CHECKLIST_DEMONSTRACAO.md`](docs/CHECKLIST_DEMONSTRACAO.md).
 
 ---
+
+## Limitações conhecidas
+
+- Vocabulário pequeno e fixo (10 sinais); sinais novos exigem gravar e treinar.
+- Não traduz a gramática da Libras: a frase é a sequência de sinais (glosa).
+- Não usa expressões faciais nem datilologia (soletração); nomes próprios não são reconhecidos.
+- Um sinal por vez: é preciso abaixar as mãos entre sinais iguais seguidos.
+- Precisa dos ombros visíveis (referência da normalização) e de boa iluminação.
+- O desempenho depende do dataset: poucas pessoas ou condições diferentes das da gravação
+  reduzem a precisão com pessoas novas.
+- A voz depende das vozes instaladas no sistema operacional.
+- O modelo é salvo com `joblib` (pickle): só carregue modelos gerados por vocês.
 
 ## Configuração
 

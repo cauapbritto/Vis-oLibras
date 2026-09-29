@@ -78,3 +78,25 @@ def test_versao_de_features_desconhecida_e_recusada(dataset_vazio):
     config.ARQ_MODELO_INFO.write_text(json.dumps(info), encoding="utf-8")
     with pytest.raises(ErroClassificador, match="v99"):
         carregar_classificador()
+
+
+def test_probabilidades_somam_1_e_prever_escolhe_a_maior(dataset_vazio):
+    modelo, X = _modelo_treinado()
+    salvar_classificador(modelo, {})
+    with pytest.warns(UserWarning):
+        classificador = carregar_classificador()
+    probabilidades = classificador.probabilidades(X[0])
+    assert sum(probabilidades.values()) == pytest.approx(1.0)
+    sinal, confianca = classificador.prever(X[0])
+    assert confianca == pytest.approx(max(probabilidades.values())) and probabilidades[sinal] == confianca
+
+
+def test_aviso_de_classes_fora_do_config(dataset_vazio):
+    rng = np.random.default_rng(1)
+    X = rng.normal(size=(20, config.TAM_FEATURES_JANELA)).astype(np.float32)
+    y = ["OI", "CASA"] * 10
+    modelo = Pipeline([("modelo", RandomForestClassifier(n_estimators=10, random_state=0))]).fit(X, y)
+    salvar_classificador(modelo, {})
+    with pytest.warns(UserWarning) as avisos:
+        carregar_classificador()
+    assert any("CASA" in str(a.message) for a in avisos)
