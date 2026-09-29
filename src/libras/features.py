@@ -137,3 +137,52 @@ def janela_para_vetor(frames: np.ndarray) -> np.ndarray:
     if not np.isfinite(vetor).all():
         raise ErroJanela("o vetor contém valores inválidos (NaN/infinito)")
     return vetor
+
+
+# -----------------------------------------------------------------------------
+# Buffer do tempo real
+# -----------------------------------------------------------------------------
+
+class BufferJanela:
+    """Guarda as linhas cruas dos últimos `duracao` segundos (janela deslizante).
+    `vetor()` aplica exatamente o mesmo pré-processamento das amostras gravadas."""
+
+    def __init__(self, duracao: float = config.DURACAO_JANELA,
+                 duracao_minima: float = config.DURACAO_MINIMA_JANELA) -> None:
+        self.duracao = duracao
+        self.duracao_minima = duracao_minima
+        self._linhas: list[np.ndarray] = []
+
+    def adicionar(self, linha: np.ndarray) -> None:
+        self._linhas.append(linha)
+        limite = linha[config.COL_TIMESTAMP] - self.duracao
+        while self._linhas and self._linhas[0][config.COL_TIMESTAMP] < limite:
+            self._linhas.pop(0)
+
+    def limpar(self) -> None:
+        self._linhas.clear()
+
+    def __len__(self) -> int:
+        return len(self._linhas)
+
+    @property
+    def duracao_atual(self) -> float:
+        if len(self._linhas) < 2:
+            return 0.0
+        return float(self._linhas[-1][config.COL_TIMESTAMP] - self._linhas[0][config.COL_TIMESTAMP])
+
+    def pronta(self) -> bool:
+        """Já tem tempo suficiente para classificar?"""
+        return self.duracao_atual >= self.duracao_minima
+
+    def pct_com_maos(self) -> float:
+        if not self._linhas:
+            return 0.0
+        flags = np.stack([l[config.COL_FLAGS] for l in self._linhas])
+        return float((flags.max(axis=1) > 0.5).mean())
+
+    def vetor(self) -> np.ndarray:
+        """Vetor de features da janela atual (timestamps relativos, como nas amostras)."""
+        frames = np.stack(self._linhas)
+        frames[:, config.COL_TIMESTAMP] -= frames[0, config.COL_TIMESTAMP]
+        return janela_para_vetor(frames)

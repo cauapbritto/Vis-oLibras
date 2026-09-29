@@ -2,12 +2,16 @@
 informações (FPS, mãos detectadas, estado da coleta...) e leitura do teclado.
 
 Observação: `cv2.putText` não desenha acentos (apareceriam como "??"), então
-todo texto passa por `sem_acentos()` antes de ir para a tela.
+o texto do painel passa por `sem_acentos()`. A legenda com a frase, que precisa
+dos acentos ("Não", "é"), é desenhada com o Pillow e a fonte DejaVu (que vem
+com o matplotlib) em `desenhar_legenda()`.
 """
 
 from __future__ import annotations
 
+import os
 import unicodedata
+from functools import lru_cache
 
 import cv2
 import numpy as np
@@ -35,6 +39,62 @@ def sem_acentos(texto: str) -> str:
     """'Mão direita' -> 'Mao direita' (o OpenCV só desenha ASCII)."""
     decomposto = unicodedata.normalize("NFKD", texto)
     return decomposto.encode("ascii", "ignore").decode("ascii")
+
+
+def desenhar_barra(frame: np.ndarray, origem: tuple[int, int], tamanho: tuple[int, int],
+                   fracao: float, cor: tuple[int, int, int]) -> None:
+    """Barra horizontal pequena (ex.: confiança), com moldura."""
+    (x, y), (largura, altura) = origem, tamanho
+    fracao = min(max(fracao, 0.0), 1.0)
+    cv2.rectangle(frame, (x, y), (x + largura, y + altura), (60, 60, 60), -1)
+    cv2.rectangle(frame, (x, y), (x + int(largura * fracao), y + altura), cor, -1)
+    cv2.rectangle(frame, (x, y), (x + largura, y + altura), COR_TEXTO, 1)
+
+
+@lru_cache(maxsize=4)
+def _fonte(tamanho: int):
+    """Fonte com acentos para o Pillow (DejaVu do matplotlib) ou None."""
+    try:
+        import matplotlib
+        from PIL import ImageFont
+        caminho = os.path.join(matplotlib.get_data_path(), "fonts", "ttf", "DejaVuSans.ttf")
+        return ImageFont.truetype(caminho, tamanho)
+    except (ImportError, OSError):
+        return None
+
+
+def desenhar_legenda(frame: np.ndarray, linhas: list[tuple[str, tuple[int, int, int], int]]) -> int:
+    """Faixa na parte de baixo da imagem com texto COM acentos.
+    Cada linha é (texto, cor BGR, tamanho da fonte em px). Devolve o y do topo da faixa."""
+    linhas = [l for l in linhas if l[0]]
+    if not linhas:
+        return frame.shape[0]
+    altura_img, largura_img = frame.shape[:2]
+    altura = sum(int(t * 1.35) for _, _, t in linhas) + 16
+    y0 = altura_img - altura
+    regiao = frame[y0:, :]
+    frame[y0:, :] = cv2.addWeighted(regiao, 0.35, np.zeros_like(regiao), 0.65, 0)
+
+    if _fonte(linhas[0][2]) is None:  # sem Pillow: cai para o OpenCV, sem acentos
+        y = y0 + 8
+        for texto, cor, tamanho in linhas:
+            y += int(tamanho * 1.35)
+            escrever(frame, texto, (12, y - 6), cor, escala=tamanho / 32)
+        return y0
+
+    from PIL import Image, ImageDraw
+    faixa = Image.fromarray(cv2.cvtColor(frame[y0:, :], cv2.COLOR_BGR2RGB))
+    desenho = ImageDraw.Draw(faixa)
+    y = 8
+    for texto, cor, tamanho in linhas:
+        fonte = _fonte(tamanho)
+        # Texto longo demais: mostra só o final (o mais recente)
+        while len(texto) > 4 and desenho.textlength(texto, font=fonte) > largura_img - 24:
+            texto = "…" + texto[2:]
+        desenho.text((12, y), texto, font=fonte, fill=cor[::-1], stroke_width=2, stroke_fill=(0, 0, 0))
+        y += int(tamanho * 1.35)
+    frame[y0:, :] = cv2.cvtColor(np.asarray(faixa), cv2.COLOR_RGB2BGR)
+    return y0
 
 
 def descrever_maos(resultado: ResultadoExtracao) -> str:

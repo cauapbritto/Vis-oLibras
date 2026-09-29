@@ -120,6 +120,7 @@ Vis-oLibras/
 │       ├── dataset.py           # gravar, ler, validar e analisar amostras (regras únicas)
 │       ├── classificador.py     # carregar modelo, prever (sinal, confiança)
 │       ├── estabilizador.py     # regras anti-repetição (máquina de estados)
+│       ├── reconhecedor.py      # buffer + classificador + estabilizador, frame a frame (sem câmera)
 │       ├── frase.py             # acumular palavras, formar frase, dicionário de frases
 │       ├── voz.py               # TTS em thread com fila
 │       ├── desenho.py           # desenhar landmarks, texto, FPS, barra de confiança
@@ -458,15 +459,17 @@ Detalhes:
 
 ## 9. Evitando repetição da mesma palavra (`estabilizador.py`)
 
-Como classificamos ~6 vezes por segundo, um único sinal de OI geraria "OI OI OI OI OI…".
-Usamos **quatro regras simples**, em sequência:
+Como classificamos ~5 vezes por segundo, um único sinal de OI geraria "OI OI OI OI OI…".
+Uma palavra só é aceita quando passa por **todas** as regras (valores em `config.py`, e
+também ajustáveis pela linha de comando do `executar.py`):
 
-| # | Regra | Parâmetro (config) | Efeito |
+| # | Regra | Parâmetro | Efeito |
 |---|---|---|---|
-| 1 | **Limiar de confiança:** ignorar previsões com probabilidade baixa | `LIMIAR_CONFIANCA = 0.75` | Corta dúvidas |
-| 2 | **Estabilidade:** exigir o mesmo sinal em *N* previsões seguidas | `N_CONSECUTIVAS = 3` | Corta "piscadas" do modelo |
-| 3 | **Cooldown:** depois de emitir uma palavra, ignorar tudo por um tempo | `COOLDOWN_S = 1.0` | Dá tempo do gesto terminar |
-| 4 | **Liberação:** para emitir a **mesma** palavra de novo, é preciso ter passado por `_NADA` (ou mãos fora da imagem) antes | — | Permite "SIM… SIM" intencional, mas não repetição acidental |
+| 1 | **Limiar de confiança** | `LIMIAR_CONFIANCA = 0.75` (`--limiar`) | Corta dúvidas |
+| 2 | **Estabilidade:** mesmo sinal em *N* previsões seguidas | `N_CONSECUTIVAS = 3` (`--consecutivas`) | Corta "piscadas" do modelo |
+| 3 | **Cooldown geral** após qualquer palavra | `COOLDOWN_S = 1.0` (`--cooldown`) | Dá tempo do gesto terminar |
+| 4 | **Mesma palavra de novo:** tempo mínimo | `COOLDOWN_MESMO_SINAL_S = 2.0` (`--cooldown-mesmo`) | Evita repetição acidental |
+| 5 | **Liberação:** repetir a mesma palavra exige passar por `_NADA` (ou mãos fora da imagem) | `EXIGIR_LIBERACAO = True` (`--sem-liberacao`) | Segurar NOME por 10 s gera um NOME só |
 
 Após emitir, o **buffer é esvaziado** para que o fim do gesto anterior não contamine a
 próxima janela.

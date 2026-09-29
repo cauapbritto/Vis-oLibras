@@ -18,9 +18,9 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
 | 1 | Câmera + MediaPipe desenhando landmarks | ✅ concluída |
 | 2 | Coleta de dados e análise do dataset | ✅ concluída |
 | 3 | Dataset, treino e avaliação | ✅ concluída |
-| 4 | Reconhecimento em tempo real | ⏳ próxima |
-| 5 | Anti-repetição e frases | — |
-| 6 | Voz | — |
+| 4 | Reconhecimento em tempo real | ✅ concluída |
+| 5 | Anti-repetição e frases | ✅ concluída (sem voz) |
+| 6 | Voz | ⏳ próxima |
 | 7 | Avaliação final | — |
 
 ## Requisitos
@@ -116,6 +116,28 @@ python scripts/treinar_modelo.py --modelo rf --reconstruir
 Saídas: `models/classificador.joblib`, `models/classes.json`,
 `models/classificador_info.json`, `reports/classification_report.txt` e
 `reports/matriz_confusao.png`.
+
+## Fase 4 — reconhecimento em tempo real
+
+```bash
+python scripts/executar.py
+python scripts/executar.py --limiar 0.6 --consecutivas 4 --cooldown 1.5
+```
+
+Teclas: **C** limpa a sequência, **BACKSPACE** apaga a última palavra, **ESPAÇO** encerra
+a frase, **Q/ESC** sai. As palavras aceitas também aparecem no terminal.
+
+Parâmetros de estabilidade (em `config.py` ou pela linha de comando):
+
+| Parâmetro | Padrão | Opção | Aumentar | Diminuir |
+|---|---|---|---|---|
+| `LIMIAR_CONFIANCA` | 0.75 | `--limiar` | menos palavras erradas, mais sinais ignorados | aceita sinais "duvidosos" |
+| `N_CONSECUTIVAS` | 3 | `--consecutivas` | mais estável, mais lento | mais rápido, mais "piscadas" |
+| `COOLDOWN_S` | 1.0 | `--cooldown` | mais tempo entre palavras | frases mais rápidas |
+| `COOLDOWN_MESMO_SINAL_S` | 2.0 | `--cooldown-mesmo` | repetir a mesma palavra demora mais | repete mais rápido |
+| `EXIGIR_LIBERACAO` | True | `--sem-liberacao` | — | repete a palavra sem abaixar as mãos |
+| `PASSO_INFERENCIA` | 5 | `--passo` | menos CPU, reação mais lenta | reage mais rápido, mais CPU |
+| `PAUSA_FRASE_S` | 2.5 | — | frases mais longas | encerra a frase mais cedo |
 
 ## Configuração
 

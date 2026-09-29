@@ -220,10 +220,20 @@ DURACAO_MINIMA_JANELA = 1.2       # só classifica com pelo menos isso no buffer
 PASSO_INFERENCIA = 5              # classifica a cada N frames
 MIN_PCT_MAOS_JANELA = 0.5         # abaixo disso a janela é tratada como _NADA
 
-# Estabilizador (anti-repetição)
-LIMIAR_CONFIANCA = 0.75  # confiança mínima para aceitar uma previsão
-N_CONSECUTIVAS = 3       # mesmo sinal em N previsões seguidas
-COOLDOWN_S = 1.0         # tempo ignorando previsões após emitir uma palavra
+# Estabilizador (anti-repetição). Uma palavra só é aceita quando:
+#   1. a confiança da previsão é >= LIMIAR_CONFIANCA;
+#   2. o mesmo sinal aparece em N_CONSECUTIVAS previsões seguidas;
+#   3. já passou COOLDOWN_S desde a última palavra aceita (qualquer uma);
+#   4. se for a MESMA palavra da anterior: já passou COOLDOWN_MESMO_SINAL_S e,
+#      com EXIGIR_LIBERACAO, a pessoa "soltou" o sinal (_NADA ou mãos fora da
+#      imagem) entre as duas. Assim, segurar NOME por 10 s gera um único NOME.
+# Com PASSO_INFERENCIA = 5 a ~25 fps, são ~5 previsões por segundo: 3 seguidas
+# significam o sinal estável por ~0,6 s.
+LIMIAR_CONFIANCA = 0.75
+N_CONSECUTIVAS = 3
+COOLDOWN_S = 1.0
+COOLDOWN_MESMO_SINAL_S = 2.0
+EXIGIR_LIBERACAO = True
 
 # =============================================================================
 # Formação de frases
@@ -231,6 +241,14 @@ COOLDOWN_S = 1.0         # tempo ignorando previsões após emitir uma palavra
 
 PAUSA_FRASE_S = 2.5  # segundos sem novas palavras para encerrar a frase
 MAX_PALAVRAS = 8     # limite de palavras por frase
+
+# =============================================================================
+# Teclas da aplicação em tempo real (além de Q/ESC para sair)
+# =============================================================================
+
+TECLAS_LIMPAR = ("c", "C")        # limpa a sequência atual
+TECLAS_APAGAR_ULTIMA = ("\x08", "\x7f")  # BACKSPACE (Windows/Linux e macOS)
+TECLAS_FINALIZAR = (" ",)         # ESPAÇO: encerra a frase agora
 
 # =============================================================================
 # Voz (Text-to-Speech)
