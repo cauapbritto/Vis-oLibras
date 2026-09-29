@@ -18,20 +18,15 @@ import cv2
 
 from libras import config
 from libras.camera import Camera, ErroCamera
-from libras.desenho import COR_AVISO, COR_TEXTO, descrever_maos, desenhar_maos, desenhar_painel
+from libras.desenho import (COR_AVISO, COR_TEXTO, descrever_maos, desenhar_maos, desenhar_painel,
+                            desenhar_pose, eh_tecla_sair, janela_fechada, ler_tecla)
 from libras.extrator import ErroModelo, ExtratorLandmarks
 from libras.metricas import ContadorFPS
 
 
 def deve_sair(espera_ms: int = 1) -> bool:
-    """Processa eventos da janela; True se o usuário apertou Q/ESC ou fechou a janela."""
-    tecla = cv2.waitKey(espera_ms) & 0xFF
-    if tecla in map(ord, config.TECLAS_SAIR):
-        return True
-    try:
-        return cv2.getWindowProperty(config.NOME_JANELA, cv2.WND_PROP_VISIBLE) < 1
-    except cv2.error:
-        return True
+    """True se o usuário apertou Q/ESC ou fechou a janela."""
+    return eh_tecla_sair(ler_tecla(espera_ms)) or janela_fechada()
 
 
 def executar(indice_camera: int) -> None:
@@ -56,6 +51,7 @@ def executar(indice_camera: int) -> None:
             if resultado.tem_maos:
                 ultimo_momento_com_mao = agora
 
+            desenhar_pose(frame, resultado)
             desenhar_maos(frame, resultado)
             linhas = [
                 (f"FPS: {fps.atualizar(agora):.1f}", COR_TEXTO),

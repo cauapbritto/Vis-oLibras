@@ -11,6 +11,7 @@ Para conferir a configuração atual:
 """
 
 import os
+import unicodedata
 from pathlib import Path
 
 # =============================================================================
@@ -20,7 +21,9 @@ from pathlib import Path
 # src/libras/config.py -> parents[0]=libras, [1]=src, [2]=raiz do projeto
 RAIZ_PROJETO = Path(__file__).resolve().parents[2]
 
-DIR_DATA = RAIZ_PROJETO / "data"
+# Pasta do dataset. Pode ser trocada pela variável de ambiente LIBRAS_DATA
+# (ex.: um drive compartilhado pelo grupo); por padrão, data/ do projeto.
+DIR_DATA = Path(os.environ.get("LIBRAS_DATA", RAIZ_PROJETO / "data"))
 DIR_RAW = DIR_DATA / "raw"                  # uma pasta por sinal, um .npy por amostra
 DIR_PROCESSED = DIR_DATA / "processed"
 ARQ_METADATA = DIR_DATA / "metadata.csv"    # índice de todas as amostras gravadas
@@ -100,6 +103,8 @@ CONFIANCA_DETECCAO_MAO = 0.5
 CONFIANCA_PRESENCA_MAO = 0.5
 CONFIANCA_RASTREAMENTO_MAO = 0.5
 CONFIANCA_DETECCAO_POSE = 0.5
+MIN_VISIBILIDADE_OMBROS = 0.5  # abaixo disso a pose é descartada (ombros fora da imagem)
+MAX_IDADE_POSE_S = 0.5  # reaproveita a última pose se a detecção falhar por até este tempo
 
 # Convenção de lateralidade: o MediaPipe classifica "Right"/"Left" supondo que a
 # imagem está espelhada (como uma selfie). Como espelhamos a imagem
@@ -123,6 +128,11 @@ SEGUNDOS_SEM_MAO_DICA = 3.0        # tempo sem mãos até mostrar dicas na tela
 # =============================================================================
 # Layout dos landmarks crus (formato de cada linha dos arquivos .npy)
 # =============================================================================
+#
+# Coordenadas em "unidades da altura da imagem": y vai de 0 a 1 e x e z são
+# multiplicados por largura/altura. Assim as distâncias não ficam distorcidas
+# em câmeras com proporções diferentes (4:3, 16:9). Mão ausente = zeros com
+# flag 0; pose ausente (ombros não visíveis) = zeros.
 
 N_PONTOS_MAO = 21
 N_PONTOS_POSE = 33
@@ -149,10 +159,21 @@ POSE_OMBRO_DIREITO = 12
 # Coleta de dados
 # =============================================================================
 
-DURACAO_AMOSTRA = 1.5          # segundos gravados por amostra
-CONTAGEM_REGRESSIVA = 3        # segundos antes de começar a gravar
-AMOSTRAS_POR_SESSAO = 40       # meta exibida na tela durante a coleta
-MIN_PCT_FRAMES_COM_MAO = 0.7   # descarta amostra com mãos em menos de 70% dos frames
+DURACAO_AMOSTRA = 1.5            # segundos gravados por amostra
+CONTAGEM_REGRESSIVA = 3          # segundos antes da primeira gravação
+INTERVALO_ENTRE_AMOSTRAS = 1.0   # pausa entre amostras na gravação contínua
+AMOSTRAS_POR_SESSAO = 40         # meta de amostras por execução do coletor
+
+# Critérios de amostra válida (usados na coleta e na análise do dataset)
+MIN_FRAMES_AMOSTRA = 15          # ~10 fps no mínimo
+MIN_PCT_FRAMES_COM_MAO = 0.7     # mãos em pelo menos 70% dos frames (exceto _NADA)
+MIN_PCT_FRAMES_COM_OMBROS = 0.7  # ombros visíveis em pelo menos 70% dos frames
+
+# Análise do dataset
+MIN_AMOSTRAS_POR_CLASSE = 30     # abaixo disso a classe é marcada como "poucas amostras"
+MIN_PESSOAS_POR_CLASSE = 2       # recomendado para o modelo generalizar
+MAX_DESBALANCEAMENTO = 3.0       # razão máxima entre a maior e a menor classe
+LIMIAR_OUTLIER = 3.5             # desvios (MAD) acima da mediana da classe
 
 # =============================================================================
 # Pré-processamento (features)
@@ -161,9 +182,24 @@ MIN_PCT_FRAMES_COM_MAO = 0.7   # descarta amostra com mãos em menos de 70% dos 
 T_FRAMES = 20        # quantidade de frames após a reamostragem de cada janela
 VERSAO_FEATURES = 1  # incrementar sempre que o pré-processamento mudar
 
-# Vetor por frame: mão direita (63) + mão esquerda (63) + flags (2) + nariz (3)
-TAM_FEATURES_FRAME = 2 * TAM_MAO + 2 + N_COORDS    # 131
-TAM_FEATURES_JANELA = T_FRAMES * TAM_FEATURES_FRAME  # 2620
+# Vetor por frame, para cada mão (direita, depois esquerda):
+#   forma (63): pontos relativos ao punho, divididos pelo tamanho da palma
+#               -> não depende da posição, da distância nem do tamanho da mão
+#   posição (2): punho relativo ao centro dos ombros, dividido pela largura dos
+#               ombros -> onde o sinal é feito em relação ao corpo
+# e, no final, as flags de presença (2).
+TAM_FORMA_MAO = TAM_MAO   # 63
+TAM_POSICAO_MAO = 2       # x, y
+TAM_FEATURES_FRAME = 2 * (TAM_FORMA_MAO + TAM_POSICAO_MAO) + 2  # 132
+TAM_FEATURES_JANELA = T_FRAMES * TAM_FEATURES_FRAME             # 2640
+
+# Pontos da mão usados como referência de tamanho (punho -> base do dedo médio)
+MAO_PUNHO = 0
+MAO_BASE_DEDO_MEDIO = 9
+
+MIN_LARGURA_OMBROS = 0.05  # evita divisão por quase zero (pose mal detectada)
+MIN_TAMANHO_PALMA = 1e-4
+MAX_LACUNA_MAO = 3         # frames seguidos sem uma mão que são interpolados
 
 # =============================================================================
 # Treinamento
@@ -206,6 +242,12 @@ FALAR_CADA_PALAVRA = False  # True: fala também cada palavra ao ser reconhecida
 # =============================================================================
 # Funções auxiliares
 # =============================================================================
+
+def identificador_sinal(texto: str) -> str:
+    """Converte o que o usuário digitou em identificador: 'não' -> 'NAO'."""
+    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
+    return sem_acento.strip().upper()
+
 
 def rotulo_exibicao(sinal: str) -> str:
     """Retorna o texto usado na tela para um identificador de sinal."""

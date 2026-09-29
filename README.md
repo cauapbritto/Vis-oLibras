@@ -16,8 +16,8 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
 |---|---|---|
 | 0 | Estrutura do projeto e configuração | ✅ concluída |
 | 1 | Câmera + MediaPipe desenhando landmarks | ✅ concluída |
-| 2 | Coleta de dados | ⏳ próxima |
-| 3 | Dataset, treino e avaliação | — |
+| 2 | Coleta de dados e análise do dataset | ✅ concluída |
+| 3 | Dataset, treino e avaliação | ⏳ próxima |
 | 4 | Reconhecimento em tempo real | — |
 | 5 | Anti-repetição e frases | — |
 | 6 | Voz | — |
@@ -88,6 +88,22 @@ Validação:
    `TROCAR_LADOS = True` em `config.py`).
 3. Só a mão esquerda → "Mao esquerda". As duas → "Ambas as maos".
 4. FPS ≥ 15.
+
+## Fase 2 — coletar e analisar o dataset
+
+```bash
+python scripts/coletar_dados.py --sinal OI --pessoa ana      # --label também funciona
+python scripts/coletar_dados.py --sinal _NADA --pessoa ana   # classe "nenhum sinal"
+python scripts/analisar_dataset.py                           # relatório + gráficos em reports/
+```
+
+No coletor: **ESPAÇO** inicia/pausa a gravação contínua, **D** apaga a última amostra,
+**Q/ESC** sai. Fique a ~1 m da câmera com os **ombros visíveis**. São salvos apenas os
+landmarks (`data/raw/<SINAL>/*.npy`), sem imagens. Antes de gravar, preencha
+[`docs/SINAIS.md`](docs/SINAIS.md) com a variante de cada sinal.
+
+Meta para o protótipo: **40 amostras por sinal por pessoa, com 3 pessoas ou mais**
+(≥ 120 por sinal) e o dobro para `_NADA`.
 
 ## Configuração
 

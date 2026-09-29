@@ -12,8 +12,10 @@ dist/
 .pytest_cache/
 
 # Dados gravados (podem ficar grandes; compartilhar por drive se necessário).
+# O metadata.csv acompanha os .npy e é criado na primeira coleta.
 # As pastas são mantidas pelos arquivos .gitkeep.
 data/raw/**/*.npy
+data/metadata.csv
 data/processed/*
 !data/processed/.gitkeep
 

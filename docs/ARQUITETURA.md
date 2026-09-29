@@ -117,6 +117,7 @@ Vis-oLibras/
 │       ├── camera.py            # abrir webcam, ler frame, espelhar, liberar
 │       ├── extrator.py          # MediaPipe: frame → landmarks crus (mãos + pose)
 │       ├── features.py          # normalização, vetor por frame, buffer, reamostragem
+│       ├── dataset.py           # gravar, ler, validar e analisar amostras (regras únicas)
 │       ├── classificador.py     # carregar modelo, prever (sinal, confiança)
 │       ├── estabilizador.py     # regras anti-repetição (máquina de estados)
 │       ├── frase.py             # acumular palavras, formar frase, dicionário de frases
@@ -128,6 +129,7 @@ Vis-oLibras/
 │   ├── testar_deteccao.py       # Fase 1: valida webcam → OpenCV → MediaPipe (sem reconhecimento)
 │   ├── coletar_dados.py         # grava amostras de um sinal
 │   ├── visualizar_amostra.py    # reproduz uma amostra gravada (conferência de qualidade)
+│   ├── analisar_dataset.py      # valida o dataset: contagens, inválidas, inconsistências, gráficos
 │   ├── construir_dataset.py     # data/raw → data/processed/dataset.npz
 │   ├── treinar_modelo.py        # treina e salva o modelo
 │   ├── avaliar_modelo.py        # relatório de precisão + matriz de confusão
@@ -145,7 +147,7 @@ Vis-oLibras/
 │   │   └── _NADA/               # classe "nenhum sinal" (muito importante!)
 │   ├── processed/
 │   │   └── dataset.npz
-│   └── metadata.csv             # índice de todas as amostras
+│   └── metadata.csv             # índice de todas as amostras (fora do Git, acompanha os .npy)
 │
 ├── models/
 │   ├── hand_landmarker.task     # modelo do MediaPipe (baixado)
@@ -268,18 +270,32 @@ sinal, mesmo quando a pessoa não está sinalizando — é a maior fonte de fals
 
 ### 5.3 Script `coletar_dados.py`
 
-Uso: `python scripts/coletar_dados.py --sinal OI --pessoa ana`
+Uso: `python scripts/coletar_dados.py --sinal OI --pessoa ana` (`--label` também é aceito)
 
 Funcionamento:
 
-1. Abre a câmera e mostra a imagem com os landmarks desenhados.
-2. Usuário aperta **ESPAÇO** → contagem regressiva de 3 s na tela.
-3. Grava **1,5 s** (`DURACAO_AMOSTRA` no config) de landmarks crus, com timestamp de cada frame.
-4. Mostra "Amostra 12/40 salva" e volta ao passo 2. **Q** sai; **D** descarta a última.
-5. Amostras em que as mãos não foram detectadas em mais de 30 % dos frames são descartadas
-   automaticamente com aviso.
+1. Abre a câmera e mostra landmarks das mãos e a linha dos ombros.
+2. **ESPAÇO** inicia a gravação contínua: contagem de 3 s, grava **1,5 s**, pausa de 1 s,
+   grava a próxima... até a meta (`--meta`, padrão 40). **ESPAÇO** de novo pausa.
+3. Cada amostra é validada na hora (`dataset.validar_amostra`) e descartada, com o
+   motivo na tela, se: poucos frames (câmera lenta), mãos em < 70 % dos frames (exceto
+   `_NADA`), ombros em < 70 % dos frames ou não gerar o vetor de features.
+4. **D** apaga a última amostra salva; **Q/ESC** sai.
+5. A tela mostra sinal, amostras (sessão/total/descartadas), mãos, ombros, FPS e estado.
 
-### 5.4 Quantidade e diversidade
+O extrator reaproveita a última pose por até 0,5 s quando o rastreamento do MediaPipe
+falha num frame isolado (os ombros quase não se movem durante um sinal).
+
+### 5.4 Análise do dataset (`analisar_dataset.py`)
+
+Usa as mesmas regras do coletor e mostra: sinais cadastrados, amostras por sinal e por
+pessoa, tamanho do vetor, amostras inválidas (e duplicatas), classes com poucas amostras,
+inconsistências (pastas desconhecidas, divergências com o `metadata.csv`, desbalanceamento,
+poucas pessoas), amostras suspeitas (muito diferentes das outras do mesmo sinal ou usando
+outra mão) e os pares de sinais mais parecidos. Salva `reports/analise_dataset.txt` e
+`reports/analise_dataset.png`. `--remover-invalidas` apaga as inválidas (com confirmação).
+
+### 5.5 Quantidade e diversidade
 
 | Item | Meta mínima |
 |---|---|
@@ -291,7 +307,7 @@ Funcionamento:
 Total estimado: 11 classes × 40 × 3 pessoas ≈ **1.300 amostras** → ~1 h de gravação
 dividida entre o grupo.
 
-`visualizar_amostra.py` permite reproduzir amostras como "esqueleto" para conferir e
+`visualizar_amostra.py` (a implementar) permitirá reproduzir amostras como "esqueleto" para conferir e
 apagar gravações ruins.
 
 ---
@@ -305,7 +321,7 @@ pré-processar, não é preciso regravar nada — basta rodar `construir_dataset
 
 ### 6.2 Formato de cada amostra (`.npy`)
 
-Arquivo: `data/raw/OI/ana_20260929_153012_007.npy` — um array `float32` de forma
+Arquivo: `data/raw/OI/ana_20260929_153012_123456.npy` — um array `float32` de forma
 **`(F, 1 + 126 + 2 + 99)`** onde `F` = número de frames gravados (~45 a 30 fps):
 
 | Colunas | Conteúdo |
@@ -316,6 +332,9 @@ Arquivo: `data/raw/OI/ana_20260929_153012_007.npy` — um array `float32` de for
 | 127–128 | flags de presença (mão direita, mão esquerda) = 0/1 |
 | 129–227 | pose: 33 pontos × (x, y, z) (usaremos só alguns, mas guardamos todos) |
 
+x e z são multiplicados por largura/altura da imagem ("unidades da altura"), para que as
+distâncias não fiquem distorcidas em câmeras 4:3 ou 16:9.
+
 Mão não detectada → zeros + flag 0.
 
 > **Atenção à lateralidade:** com a imagem espelhada, o MediaPipe pode inverter
@@ -325,8 +344,8 @@ Mão não detectada → zeros + flag 0.
 ### 6.3 `data/metadata.csv`
 
 ```
-arquivo,sinal,pessoa,data_hora,num_frames,fps_medio,pct_frames_com_mao
-raw/OI/ana_20260929_153012_007.npy,OI,ana,2026-09-29T15:30:12,46,30.4,0.96
+arquivo,sinal,pessoa,data_hora,num_frames,fps_medio,pct_frames_com_mao,pct_frames_com_ombros
+raw/OI/ana_20260929_153012_007.npy,OI,ana,2026-09-29T15:30:12,46,30.4,0.96,1.00
 ```
 
 Serve para contar amostras por classe/pessoa, filtrar gravações ruins e dividir
@@ -343,19 +362,31 @@ treino/teste **por pessoa**.
 
 ### 7.1 Pré-processamento (`features.py`) — idêntico no treino e no tempo real
 
-Para **cada frame**:
+Objetivo: o modelo deve aprender o **formato e o movimento** da mão e **onde o sinal é feito
+em relação ao corpo** — e não a posição da mão na imagem, a distância até a câmera ou o
+tamanho da mão de quem gravou.
 
-1. **Origem no corpo:** subtrair de cada ponto das mãos o ponto médio entre os ombros.
-2. **Escala:** dividir pela distância entre os ombros (invariante à distância da câmera).
-3. Montar o vetor do frame: mão direita (63) + mão esquerda (63) + flags (2) +
-   posição do nariz relativa (3) = **131 valores**.
+Para **cada mão presente em cada frame** (coordenadas já corrigidas pela proporção da imagem):
+
+1. **Forma (63 valores):** pontos relativos ao punho, divididos pelo tamanho da palma
+   (punho → base do dedo médio). Invariante à posição na imagem, à distância e ao tamanho
+   da mão.
+2. **Posição (2 valores):** punho relativo ao centro dos ombros, dividido pela largura dos
+   ombros. Não é a posição na câmera: é o *ponto de articulação* do sinal (peito, boca,
+   testa), que em Libras diferencia sinais como EU × MEU. Invariante à posição da pessoa e à
+   distância.
+3. Mão ausente → 63 + 2 zeros. Vetor do frame: [forma D, posição D, forma E, posição E,
+   flags] = **132 valores**.
 
 Para **cada amostra/janela**:
 
-4. **Reamostragem temporal** para **T = 20 frames** uniformemente espaçados no tempo
-   (interpolação linear usando os timestamps). Isso torna o sistema independente do FPS
-   da máquina (a câmera de um aluno pode rodar a 15 fps e a de outro a 30 fps).
-5. **Achatar** → vetor de 20 × 131 = **2.620 features**.
+4. **Falhas curtas de detecção** (a mão some por até 3 frames) são interpoladas.
+5. Frames sem ombros usam a referência do frame mais próximo; sem ombros em nenhum frame,
+   a janela é inválida (`ErroJanela`).
+6. **Reamostragem temporal** para **T = 20 frames** igualmente espaçados no tempo (frame
+   mais próximo de cada instante — evita misturar um frame com mão e outro sem). Torna o
+   sistema independente do FPS da máquina.
+7. **Achatar** → vetor de 20 × 132 = **2.640 features**.
 
 Função única: `features.janela_para_vetor(frames_brutos) -> np.ndarray`. **Treino e tempo
 real chamam exatamente a mesma função** — isso evita o erro mais comum desse tipo de

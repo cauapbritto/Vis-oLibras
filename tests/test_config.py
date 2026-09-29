@@ -31,7 +31,8 @@ def test_existe_pasta_de_dados_para_cada_classe():
 def test_layout_dos_landmarks():
     assert config.TAM_FRAME_BRUTO == 228
     assert config.COL_POSE.stop == config.TAM_FRAME_BRUTO
-    assert config.TAM_FEATURES_FRAME == 131
+    assert config.TAM_FEATURES_FRAME == 132
+    assert config.TAM_FEATURES_JANELA == config.T_FRAMES * 132
 
 
 def test_limiares_validos():
@@ -43,3 +44,9 @@ def test_limiares_validos():
 def test_rotulo_exibicao():
     assert config.rotulo_exibicao("NAO") == "NÃO"
     assert config.rotulo_exibicao("OI") == "OI"
+
+
+def test_identificador_sinal():
+    assert config.identificador_sinal("não") == "NAO"
+    assert config.identificador_sinal(" oi ") == "OI"
+    assert config.identificador_sinal("_nada") == config.CLASSE_NADA
