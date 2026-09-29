@@ -89,6 +89,7 @@ INDICE_CAMERA = int(os.environ.get("LIBRAS_CAMERA", "0"))
 LARGURA_CAMERA = 640
 ALTURA_CAMERA = 480
 ESPELHAR_IMAGEM = True  # mostra a imagem como um espelho (mais natural)
+MAX_FALHAS_LEITURA = 30  # falhas seguidas de leitura antes de considerar a câmera perdida
 
 # =============================================================================
 # MediaPipe
@@ -96,12 +97,28 @@ ESPELHAR_IMAGEM = True  # mostra a imagem como um espelho (mais natural)
 
 NUM_MAOS = 2
 CONFIANCA_DETECCAO_MAO = 0.5
+CONFIANCA_PRESENCA_MAO = 0.5
 CONFIANCA_RASTREAMENTO_MAO = 0.5
 CONFIANCA_DETECCAO_POSE = 0.5
 
-# Convenção de lateralidade: o rótulo "Right"/"Left" do MediaPipe é usado como
-# está, após o espelhamento da imagem. Coleta e tempo real passam pelo mesmo
-# extrator, então a convenção é sempre a mesma nos dois modos.
+# Convenção de lateralidade: o MediaPipe classifica "Right"/"Left" supondo que a
+# imagem está espelhada (como uma selfie). Como espelhamos a imagem
+# (ESPELHAR_IMAGEM = True), "Right" corresponde à mão direita real da pessoa.
+# Coleta e tempo real passam pelo mesmo extrator, então a convenção é sempre a
+# mesma nos dois modos.
+#
+# Validação (Fase 1): levante só a mão DIREITA diante da câmera; a tela deve
+# mostrar "Mão direita". Se mostrar "Mão esquerda", mude para True.
+TROCAR_LADOS = False
+
+# =============================================================================
+# Interface
+# =============================================================================
+
+NOME_JANELA = "Vis-oLibras"
+TECLAS_SAIR = ("q", "Q", "\x1b")  # Q ou ESC
+JANELA_FPS = 30                    # nº de frames usados na média do FPS
+SEGUNDOS_SEM_MAO_DICA = 3.0        # tempo sem mãos até mostrar dicas na tela
 
 # =============================================================================
 # Layout dos landmarks crus (formato de cada linha dos arquivos .npy)

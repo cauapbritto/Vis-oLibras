@@ -125,6 +125,7 @@ Vis-oLibras/
 │       └── metricas.py          # cronômetro por etapa, FPS, log CSV de latência
 │
 ├── scripts/                     # pontos de entrada (o aluno roda estes)
+│   ├── testar_deteccao.py       # Fase 1: valida webcam → OpenCV → MediaPipe (sem reconhecimento)
 │   ├── coletar_dados.py         # grava amostras de um sinal
 │   ├── visualizar_amostra.py    # reproduz uma amostra gravada (conferência de qualidade)
 │   ├── construir_dataset.py     # data/raw → data/processed/dataset.npz
@@ -198,7 +199,8 @@ aberta para trocar por Keras depois (ver seção 13).
 
 ### 3.2 Por que MediaPipe Tasks (e não `mp.solutions`)?
 
-A API antiga `mediapipe.solutions` (Hands/Holistic) está **descontinuada**. A API
+A API antiga `mediapipe.solutions` (Hands/Holistic) foi **removida** (não existe no
+MediaPipe 1.x). A API
 **Tasks** (`mediapipe.tasks.python.vision.HandLandmarker` e `PoseLandmarker`) é a
 suportada. Ela exige baixar arquivos `.task` (modelos) para a pasta `models/` — o README
 terá os links oficiais.
@@ -238,6 +240,7 @@ Observações de instalação:
 - **Windows:** `pyttsx3` usa as vozes SAPI5. Para voz em português, instalar o pacote de
   idioma "Português (Brasil)" com recurso de fala (voz "Maria"/"Daniel").
 - **Linux:** `pyttsx3` usa eSpeak: `sudo apt install espeak-ng` (voz robótica, mas funciona).
+- **Linux:** o MediaPipe 1.x precisa de bibliotecas gráficas: `sudo apt install libegl1 libgles2`.
 - **macOS:** usa a voz nativa do sistema (ex.: "Luciana").
 
 ---
@@ -588,7 +591,7 @@ Cronometrar cada etapa com `time.perf_counter()` e gravar em `reports/latencia_<
 
 | Fase | Entrega |
 |---|---|
-| **1. Base** | Câmera + MediaPipe desenhando landmarks na tela; FPS visível |
+| **1. Base** | Câmera + MediaPipe desenhando landmarks na tela; FPS visível (`testar_deteccao.py`) |
 | **2. Dados** | `coletar_dados.py` + `visualizar_amostra.py`; `SINAIS.md`; coleta com o grupo |
 | **3. Modelo** | `features.py`, `construir_dataset.py`, `treinar_modelo.py`, `avaliar_modelo.py` |
 | **4. Tempo real** | `executar.py` mostrando o sinal + confiança |

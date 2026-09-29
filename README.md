@@ -15,8 +15,8 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
 | Fase | Descrição | Situação |
 |---|---|---|
 | 0 | Estrutura do projeto e configuração | ✅ concluída |
-| 1 | Câmera + MediaPipe desenhando landmarks | ⏳ próxima |
-| 2 | Coleta de dados | — |
+| 1 | Câmera + MediaPipe desenhando landmarks | ✅ concluída |
+| 2 | Coleta de dados | ⏳ próxima |
 | 3 | Dataset, treino e avaliação | — |
 | 4 | Reconhecimento em tempo real | — |
 | 5 | Anti-repetição e frases | — |
@@ -31,6 +31,8 @@ pequeno de sinais de Libras e convertê-los em texto na tela e em áudio.
   - **Windows:** instalar o idioma "Português (Brasil)" com recurso de fala
   - **Linux:** `sudo apt install espeak-ng`
   - **macOS:** voz nativa (ex.: "Luciana")
+- **Linux:** o MediaPipe precisa das bibliotecas gráficas do sistema:
+  `sudo apt install libegl1 libgles2`
 
 ## Instalação
 
@@ -67,6 +69,25 @@ consigam fazer `from libras import config` de qualquer pasta.
 python -m libras.config   # mostra caminhos, câmera, classes e limiares
 pytest                    # roda os testes
 ```
+
+## Fase 1 — testar câmera e detecção de mãos
+
+```bash
+python scripts/testar_deteccao.py            # câmera padrão
+python scripts/testar_deteccao.py --camera 1 # outra câmera
+```
+
+Na primeira execução, o modelo `models/hand_landmarker.task` (~8 MB) é baixado
+automaticamente. A janela mostra os landmarks das mãos (verde = direita, azul =
+esquerda), o FPS e quais mãos foram detectadas. **Q** ou **ESC** fecha.
+
+Validação:
+
+1. Sem mãos na frente da câmera → "Nenhuma mao detectada" (após 3 s aparecem dicas).
+2. Só a mão **direita** → "Mao direita" (se aparecer "esquerda", use
+   `TROCAR_LADOS = True` em `config.py`).
+3. Só a mão esquerda → "Mao esquerda". As duas → "Ambas as maos".
+4. FPS ≥ 15.
 
 ## Configuração
 
