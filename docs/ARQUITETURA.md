@@ -103,6 +103,7 @@ de voz) sem mexer no resto.
 Vis-oLibras/
 ├── README.md                    # como instalar e rodar
 ├── requirements.txt             # dependências com versões fixadas
+├── pyproject.toml               # permite `pip install -e .` (importar `libras` de qualquer pasta)
 ├── .gitignore                   # ignora venv/, data/raw (opcional), models/*.joblib grandes
 │
 ├── docs/
@@ -139,6 +140,7 @@ Vis-oLibras/
 │   │   ├── OI/
 │   │   ├── EU/
 │   │   ├── ...
+│   │   ├── NAO/                 # identificadores sem acento (exibido como "NÃO")
 │   │   └── _NADA/               # classe "nenhum sinal" (muito importante!)
 │   ├── processed/
 │   │   └── dataset.npz
@@ -243,6 +245,10 @@ Observações de instalação:
 ## 5. Coleta de dados
 
 ### 5.1 Padronização dos sinais (antes de gravar!)
+
+> **Identificadores:** os nomes das classes (e das pastas) não têm acento — `NAO` é
+> exibido na tela como "NÃO" (`ROTULOS_EXIBICAO` no `config.py`). Acentos em nomes de
+> pastas causam problemas entre Windows, Linux e macOS.
 
 Libras tem **variações regionais**. Antes da coleta, o grupo escolhe **uma variante** de
 cada sinal e documenta em `docs/SINAIS.md` (descrição + link de referência, ex.: Dicionário
@@ -464,7 +470,7 @@ palavras.
   "AJUDA":          "Ajuda!",
   "OBRIGADO":       "Obrigado!",
   "SIM":            "Sim.",
-  "NÃO":            "Não."
+  "NAO":            "Não."
 }
 ```
 

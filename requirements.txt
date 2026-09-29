@@ -1,0 +1,25 @@
+# Dependências do Vis-oLibras (Python 3.10 a 3.12; recomendado 3.11).
+# Após a primeira instalação que funcionar em todas as máquinas do grupo,
+# fixar as versões exatas com: pip freeze > requirements-lock.txt
+
+# Captura de vídeo e interface
+opencv-python>=4.8
+
+# Landmarks das mãos e da pose (API Tasks)
+mediapipe>=0.10.14
+
+# Cálculo numérico
+numpy>=1.26
+
+# Aprendizado de máquina e persistência do modelo
+scikit-learn>=1.3
+joblib>=1.3
+
+# Voz offline
+pyttsx3>=2.90
+
+# Gráficos da avaliação (matriz de confusão)
+matplotlib>=3.8
+
+# Testes
+pytest>=8.0

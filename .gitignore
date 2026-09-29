@@ -1,0 +1,32 @@
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Dados gravados (podem ficar grandes; compartilhar por drive se necessário).
+# As pastas são mantidas pelos arquivos .gitkeep.
+data/raw/**/*.npy
+data/processed/*
+!data/processed/.gitkeep
+
+# Modelos (MediaPipe baixado e classificador treinado)
+models/*
+!models/.gitkeep
+
+# Relatórios gerados
+reports/*
+!reports/.gitkeep
+
+# IDEs e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
