@@ -177,7 +177,8 @@ def executar(sinal: str, pessoa: str, meta: int, indice_camera: int) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--sinal", "--label", dest="sinal", required=True,
-                        help=f"sinal a gravar: {', '.join(config.CLASSES)}")
+                        help=f"sinal a gravar: {', '.join(config.CLASSES_OBRIGATORIAS)} "
+                             "ou uma letra do alfabeto (A a Z, Ç)")
     parser.add_argument("--pessoa", required=True, help="quem está gravando (ex.: ana)")
     parser.add_argument("--meta", type=int, default=config.AMOSTRAS_POR_SESSAO,
                         help=f"amostras nesta sessão (padrão: {config.AMOSTRAS_POR_SESSAO})")
@@ -187,7 +188,8 @@ def main() -> int:
 
     sinal = config.identificador_sinal(args.sinal)
     if sinal not in config.CLASSES:
-        parser.error(f"sinal '{args.sinal}' não está em config.CLASSES: {', '.join(config.CLASSES)}")
+        parser.error(f"sinal '{args.sinal}' não está no vocabulário: {', '.join(config.CLASSES_OBRIGATORIAS)} "
+                     "ou uma letra (A a Z, Ç)")
     try:
         pessoa = dataset.validar_pessoa(args.pessoa)
     except ValueError as erro:

@@ -83,3 +83,20 @@ def test_frases_txt_do_projeto_e_valido():
     tabela = TabelaFrases.ler(config.ARQ_FRASES)
     assert tabela.avisos == [], tabela.avisos
     assert len(tabela) > 0
+
+
+def test_letras_seguidas_viram_palavra_soletrada():
+    tabela = TabelaFrases.de_texto("MEU NOME = Meu nome é\nOBRIGADO = Obrigado!")
+    resultado = tabela.traduzir(["MEU", "NOME", "C", "A", "U", "A"])
+    assert resultado.texto == "Meu nome é Caua"
+    assert resultado.glosa == "MEU NOME C-A-U-A"
+    assert resultado.completa and resultado.partes[-1].soletrada
+    # sem tabela também soletra; Ç aparece com cedilha; nome próprio sempre com maiúscula
+    assert TabelaFrases().traduzir(["EU", "C_CEDILHA", "A"]).texto == "EU Ça"
+    assert tabela.traduzir(["OBRIGADO", "A", "N", "A"]).texto == "Obrigado! Ana"
+    assert tabela.traduzir(["A", "N", "A", "OBRIGADO"]).texto == "Ana obrigado!"
+
+
+def test_letra_na_tabela_gera_aviso():
+    tabela = TabelaFrases.de_texto("A = Letra A")  # letras são soletradas sozinhas, não pela tabela
+    assert any("sinal desconhecido A" in a for a in tabela.avisos)

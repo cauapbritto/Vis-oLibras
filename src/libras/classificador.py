@@ -108,7 +108,7 @@ def carregar_classificador() -> Classificador:
     if not hasattr(modelo, "predict_proba"):
         raise ErroClassificador("o modelo não fornece probabilidades (predict_proba)")
 
-    faltando = sorted(set(config.CLASSES) - set(classes))
+    faltando = sorted(set(config.CLASSES_OBRIGATORIAS) - set(classes))  # letras são opcionais
     if faltando:
         warnings.warn(f"o modelo não conhece os sinais {faltando}; grave amostras e treine novamente",
                       stacklevel=2)

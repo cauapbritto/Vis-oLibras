@@ -28,7 +28,7 @@ from __future__ import annotations
 from typing import Callable
 
 from libras import config
-from libras.traducao import TabelaFrases, Traducao
+from libras.traducao import TabelaFrases, Traducao, agrupar_letras
 
 RegraTexto = Callable[[list[str]], list[str]]
 
@@ -82,8 +82,9 @@ class GerenciadorSentenca:
         if (palavra == self.ultimo_confirmado and self.palavras
                 and agora - self.momento_ultimo < self.janela_repeticao_s):
             return False
-        if len(self.palavras) >= self.max_palavras:
-            self.finalizar()
+        continua_soletrando = config.eh_letra(palavra) and self.palavras and config.eh_letra(self.palavras[-1])
+        if not continua_soletrando and len(agrupar_letras(self.palavras)) >= self.max_palavras:
+            self.finalizar()  # uma palavra soletrada conta como uma palavra só
         self.palavras.append(palavra)
         self.ultimo_confirmado, self.momento_ultimo = palavra, agora
         return True
@@ -128,8 +129,9 @@ class GerenciadorSentenca:
 
     @property
     def sequencia(self) -> list[str]:
-        """Palavras como devem aparecer na tela ("NAO" -> "NÃO")."""
-        return [config.rotulo_exibicao(p) for p in self.palavras]
+        """Palavras como devem aparecer na tela ("NAO" -> "NÃO"); letras seguidas
+        aparecem juntas, com hífen ("C-A-U-A")."""
+        return ["-".join(config.rotulo_exibicao(p) for p in grupo) for grupo in agrupar_letras(self.palavras)]
 
     @property
     def traducao_atual(self) -> Traducao:

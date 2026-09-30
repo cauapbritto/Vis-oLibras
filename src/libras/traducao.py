@@ -13,7 +13,9 @@ Formato do frases.txt (uma frase por linha; "#" começa um comentário):
     MEU NOME  = Meu nome é
 
 Conversão: da esquerda para a direita, sempre com a frase cadastrada MAIS
-LONGA que encaixa naquele ponto ("BOM DIA" ganha de "BOM" sozinho).
+LONGA que encaixa naquele ponto ("BOM DIA" ganha de "BOM" sozinho). Letras do
+alfabeto seguidas viram uma palavra soletrada, sem precisar de tabela:
+"MEU NOME C A U A" -> "Meu nome é Caua" (glosa: MEU NOME C-A-U-A).
 
     tabela = TabelaFrases.ler()          # config.ARQ_FRASES
     tabela.traduzir(["OI", "BOM", "DIA"]).texto   # "Oi! Bom dia!"
@@ -34,6 +36,29 @@ class Parte:
     """Um pedaço da sequência: os sinais e o português (None = sem frase cadastrada)."""
     sinais: tuple[str, ...]
     texto: str | None
+    soletrada: bool = False    # letras do alfabeto juntadas numa palavra
+
+    @property
+    def glosa(self) -> str:
+        """Como a parte aparece na glosa: letras soletradas unidas por hífen (C-A-U-A)."""
+        separador = "-" if self.soletrada else " "
+        return separador.join(config.rotulo_exibicao(s) for s in self.sinais)
+
+
+def agrupar_letras(palavras) -> list[tuple[str, ...]]:
+    """Agrupa letras seguidas: [EU, C, A, U, A] -> [(EU,), (C, A, U, A)]."""
+    grupos: list[tuple[str, ...]] = []
+    for palavra in palavras:
+        if config.eh_letra(palavra) and grupos and config.eh_letra(grupos[-1][-1]):
+            grupos[-1] = grupos[-1] + (palavra,)
+        else:
+            grupos.append((palavra,))
+    return grupos
+
+
+def palavra_soletrada(letras) -> str:
+    """("C", "A", "U", "A") -> "Caua" (nomes próprios, a principal razão de soletrar)."""
+    return "".join(config.rotulo_exibicao(l) for l in letras).capitalize()
 
 
 @dataclass(frozen=True)
@@ -112,6 +137,14 @@ class TabelaFrases:
         partes: list[Parte] = []
         i = 0
         while i < len(palavras):
+            if config.eh_letra(palavras[i]):
+                fim = i
+                while fim < len(palavras) and config.eh_letra(palavras[fim]):
+                    fim += 1
+                letras = tuple(palavras[i:fim])
+                partes.append(Parte(letras, palavra_soletrada(letras), soletrada=True))
+                i = fim
+                continue
             for tamanho in range(min(maior, len(palavras) - i), 0, -1):
                 chave = tuple(palavras[i:i + tamanho])
                 if chave in self.frases:
@@ -121,7 +154,7 @@ class TabelaFrases:
             else:
                 partes.append(Parte((palavras[i],), None))
                 i += 1
-        glosa = " ".join(config.rotulo_exibicao(p) for p in palavras)
+        glosa = " ".join(parte.glosa for parte in partes)
         return Traducao(_montar_texto(partes), glosa, tuple(partes))
 
 
@@ -139,7 +172,8 @@ def _montar_texto(partes: list[Parte]) -> str:
         texto = parte.texto
         inicio_de_frase = not pedacos or anterior_glosa or pedacos[-1][-1:] in PONTUACAO_FINAL
         anterior_glosa = False
-        texto = (texto[:1].upper() if inicio_de_frase else texto[:1].lower()) + texto[1:]
+        if not parte.soletrada:  # palavra soletrada é nome próprio: sempre com maiúscula
+            texto = (texto[:1].upper() if inicio_de_frase else texto[:1].lower()) + texto[1:]
         pedacos.append(texto)
     return " ".join(pedacos)
 

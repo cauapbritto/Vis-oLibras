@@ -23,9 +23,18 @@ def test_identificadores_sem_acento():
         assert classe.isascii()
 
 
-def test_existe_pasta_de_dados_para_cada_classe():
-    for classe in config.CLASSES:
+def test_existe_pasta_de_dados_para_cada_classe_obrigatoria():
+    # as pastas das letras (opcionais) são criadas na primeira gravação
+    for classe in config.CLASSES_OBRIGATORIAS:
         assert (config.DIR_RAW / classe).is_dir()
+
+
+def test_letras_do_alfabeto():
+    assert len(config.LETRAS) == 27 and config.LETRAS[0] == "A" and "C_CEDILHA" in config.LETRAS
+    assert set(config.LETRAS) <= set(config.CLASSES) and not set(config.LETRAS) & set(config.CLASSES_OBRIGATORIAS)
+    assert config.identificador_sinal("ç") == "C_CEDILHA" and config.rotulo_exibicao("C_CEDILHA") == "Ç"
+    assert config.identificador_sinal("a") == "A"
+    assert config.eh_letra("A") and not config.eh_letra("EU") and not config.eh_letra(None)
 
 
 def test_layout_dos_landmarks():

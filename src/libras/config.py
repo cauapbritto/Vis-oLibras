@@ -81,12 +81,20 @@ SINAIS = [
 CLASSE_NADA = "_NADA"
 
 # Todas as classes que o modelo aprende.
-CLASSES = SINAIS + [CLASSE_NADA]
+# Alfabeto manual (datilologia), para soletrar nomes e palavras fora do
+# vocabulário. As letras são OPCIONAIS: entram no modelo só as que forem
+# gravadas, e letras seguidas viram uma palavra soletrada ("C A U A" -> "Caua").
+# "Ç" é gravado na pasta C_CEDILHA (nomes de pasta sem acento).
+LETRAS = [chr(c) for c in range(ord("A"), ord("Z") + 1)] + ["C_CEDILHA"]
+
+CLASSES = SINAIS + LETRAS + [CLASSE_NADA]          # tudo o que pode ser gravado e treinado
+CLASSES_OBRIGATORIAS = SINAIS + [CLASSE_NADA]      # o que o modelo precisa ter (sem avisos pelas letras)
 
 # Como cada identificador aparece na tela (glosa). Sinais ausentes aqui são
 # exibidos com o próprio identificador.
 ROTULOS_EXIBICAO = {
     "NAO": "NÃO",
+    "C_CEDILHA": "Ç",
 }
 
 # =============================================================================
@@ -342,9 +350,19 @@ POLITICA_VOZ = "ignorar"     # fala pedida durante outra: "ignorar" ou "enfileir
 # =============================================================================
 
 def identificador_sinal(texto: str) -> str:
-    """Converte o que o usuário digitou em identificador: 'não' -> 'NAO'."""
+    """Converte o que o usuário digitou em identificador: 'não' -> 'NAO', 'ç' -> 'C_CEDILHA'."""
+    if texto.strip().upper() == "Ç":
+        return "C_CEDILHA"
     sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
     return sem_acento.strip().upper()
+
+
+def eh_letra(sinal: str | None) -> bool:
+    """True para as letras do alfabeto manual (A..Z e C_CEDILHA)."""
+    return sinal in _LETRAS
+
+
+_LETRAS = frozenset(LETRAS)
 
 
 def rotulo_exibicao(sinal: str) -> str:
@@ -356,7 +374,7 @@ def garantir_diretorios() -> None:
     """Cria as pastas de dados, modelos e relatórios, caso não existam."""
     for pasta in (DIR_RAW, DIR_PROCESSED, DIR_MODELOS, DIR_REPORTS):
         pasta.mkdir(parents=True, exist_ok=True)
-    for classe in CLASSES:
+    for classe in CLASSES_OBRIGATORIAS:  # as pastas das letras são criadas na primeira gravação
         (DIR_RAW / classe).mkdir(parents=True, exist_ok=True)
 
 

@@ -5,6 +5,8 @@
 #
 # Formato: uma frase por linha,   SINAIS = texto em português
 #   - os sinais são os nomes do projeto: OI EU MEU NOME BOM DIA OBRIGADO SIM NAO AJUDA
+#   - letras do alfabeto NÃO entram aqui: letras seguidas viram uma palavra soletrada
+#     sozinhas (MEU NOME C A U A -> "Meu nome é Caua")
 #   - "#" começa um comentário (a linha, ou o resto dela, é ignorada)
 #   - vale sempre a frase MAIS LONGA que encaixar: "BOM DIA" ganha de "BOM" sozinho
 #

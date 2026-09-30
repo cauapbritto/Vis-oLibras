@@ -146,9 +146,11 @@ def main() -> int:
     mostrar(f"Dataset: {len(dados.y)} amostras, {len(classes)} classes, {dados.X.shape[1]} features "
             f"(versão {config.VERSAO_FEATURES}), "
             f"pessoas: {', '.join(sorted(set(dados.pessoas)))}")
-    ausentes = [c for c in config.CLASSES if c not in contagem]
+    ausentes = [c for c in config.CLASSES_OBRIGATORIAS if c not in contagem]
     if ausentes:
         mostrar(f"[AVISO] classes sem amostras (o modelo não vai reconhecê-las): {', '.join(ausentes)}")
+    letras = [config.rotulo_exibicao(c) for c in config.LETRAS if c in contagem]
+    mostrar(f"Letras do alfabeto no modelo: {', '.join(letras) if letras else 'nenhuma (opcional)'}")
     poucas = [f"{c} ({contagem[c]})" for c in classes if contagem[c] < config.MIN_AMOSTRAS_POR_CLASSE]
     if poucas:
         mostrar(f"[AVISO] classes com menos de {config.MIN_AMOSTRAS_POR_CLASSE} amostras: {', '.join(poucas)}")

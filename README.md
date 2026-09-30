@@ -112,6 +112,15 @@ linha e testa sequências sem abrir a câmera, ex.: `testar_frases.py EU NOME OB
 **Revisem as frases com quem conhece Libras.** Para voltar ao modo só glosa:
 `USAR_TABELA_FRASES = False` no `config.py`.
 
+**Letras do alfabeto (datilologia).** As letras A a Z e Ç podem ser gravadas e treinadas
+como qualquer sinal, e são **opcionais**: entram no modelo só as que forem gravadas, sem
+avisos pelas que faltam. Letras seguidas viram uma palavra soletrada, sem precisar de
+tabela: MEU · NOME · C · A · U · A aparece como "Meu nome é Caua" (glosa: MEU NOME C-A-U-A),
+e uma palavra soletrada conta como uma palavra só no limite da frase. Para repetir a mesma
+letra (ex.: o N de "ANNA"), abaixe a mão rapidamente entre as duas. Muitas letras têm
+formatos de mão parecidos: confira os pares confundidos na matriz de confusão depois de
+treinar.
+
 **Sem voz?** `python scripts/demonstracao/testar_voz.py` (ou menu → V) testa cada motor de
 voz do sistema, um por vez (no Windows: as vozes do sistema pelo PowerShell/System.Speech,
 que é o padrão, e o pyttsx3). Se só um funcionar, escolha-o em `MOTOR_VOZ` no `config.py`.
@@ -188,7 +197,11 @@ de cada sinal:
 ```bash
 python scripts/desenvolvimento/coletar_dados.py --sinal OI --pessoa ana      # --label também funciona
 python scripts/desenvolvimento/coletar_dados.py --sinal _NADA --pessoa ana   # classe "nenhum sinal"
+python scripts/desenvolvimento/coletar_dados.py --sinal A --pessoa ana       # letras: A a Z e Ç (opcionais)
 ```
+
+No menu do Windows (opção 3), digite `A-E` para gravar de A até E, `LETRAS` para o alfabeto
+inteiro ou uma lista como `OI,A,B`.
 
 ESPAÇO inicia/pausa a gravação contínua, D apaga a última amostra, Q/ESC sai. Fique a
 ~1 m da câmera com os ombros visíveis. São salvos só os landmarks

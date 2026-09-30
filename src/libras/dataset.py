@@ -249,8 +249,12 @@ class RelatorioDataset:
     def perfis(self, sinal: str) -> Counter:
         return Counter(a.perfil for a in self.validas(sinal))
 
+    def classes_em_uso(self) -> list[str]:
+        """Classes obrigatórias + letras que já têm gravações (as outras letras são opcionais)."""
+        return [c for c in config.CLASSES if c in config.CLASSES_OBRIGATORIAS or self.contagem(c) > 0]
+
     def classes_com_poucas_amostras(self) -> list[str]:
-        return [c for c in config.CLASSES if self.contagem(c) < config.MIN_AMOSTRAS_POR_CLASSE]
+        return [c for c in self.classes_em_uso() if self.contagem(c) < config.MIN_AMOSTRAS_POR_CLASSE]
 
 
 def _verificar_organizacao(inconsistencias: list[str]) -> None:
@@ -265,7 +269,7 @@ def _verificar_organizacao(inconsistencias: list[str]) -> None:
         for arquivo in pasta.iterdir():
             if arquivo.suffix != ".npy" and arquivo.name != ".gitkeep":
                 inconsistencias.append(f"arquivo inesperado: {caminho_relativo(arquivo)}")
-    for classe in config.CLASSES:
+    for classe in config.CLASSES_OBRIGATORIAS:
         if not (config.DIR_RAW / classe).is_dir():
             inconsistencias.append(f"classe {classe} não tem pasta em data/raw/")
 

@@ -329,9 +329,10 @@ class AplicacaoLibras(ctk.CTk):
 
     def _resumo_aviso_modelo(self) -> str:
         """O aviso do carregamento do modelo em uma frase curta para a tela."""
-        treinadas = [c for c in config.CLASSES if c in self.classificador.classes]
-        if len(treinadas) < len(config.CLASSES):
-            return (f"O modelo ainda não conhece todos os sinais ({len(treinadas)} de {len(config.CLASSES)}). "
+        treinadas = [c for c in config.CLASSES_OBRIGATORIAS if c in self.classificador.classes]
+        if len(treinadas) < len(config.CLASSES_OBRIGATORIAS):
+            return (f"O modelo ainda não conhece todos os sinais ({len(treinadas)} de "
+                    f"{len(config.CLASSES_OBRIGATORIAS)}). "
                     "Grave os que faltam e treine de novo (menu, opções 3 e 8).")
         return f"Modelo: {self.aviso_modelo}"
 
@@ -612,8 +613,10 @@ class AplicacaoLibras(ctk.CTk):
         if self._carregando:
             self.ind_modelo.definir("Modelo carregando", STATUS_NEUTRO)
         elif self.classificador is not None:
-            sinais = len([c for c in self.classificador.classes if c != config.CLASSE_NADA])
-            self.ind_modelo.definir(f"Modelo com {sinais} sinais" + (", com avisos" if self.aviso_modelo else ""),
+            classes = [c for c in self.classificador.classes if c != config.CLASSE_NADA]
+            letras = sum(config.eh_letra(c) for c in classes)
+            texto = f"Modelo com {len(classes) - letras} sinais" + (f" e {letras} letras" if letras else "")
+            self.ind_modelo.definir(texto + (", com avisos" if self.aviso_modelo else ""),
                                     STATUS_ATENCAO if self.aviso_modelo else STATUS_OK)
         else:
             self.ind_modelo.definir("Sem modelo treinado", STATUS_ERRO)

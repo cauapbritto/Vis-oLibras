@@ -1,6 +1,7 @@
 ﻿# Menu do Librahin (chamado pelo Librahin.bat).
 . (Join-Path $PSScriptRoot "comum.ps1")
 $Sinais = "OI", "EU", "MEU", "NOME", "BOM", "DIA", "OBRIGADO", "SIM", "NAO", "AJUDA"
+$Letras = @([char[]](65..90) | ForEach-Object { [string]$_ }) + "C_CEDILHA"   # A a Z e Ç
 
 if (-not (Test-Path $PythonVenv)) {
     Erro "O projeto ainda não foi instalado. Dê dois cliques em INSTALAR.bat primeiro."
@@ -26,14 +27,22 @@ function Gravar-Sinais {
     $pessoa = Pedir-Nome
     if (-not $pessoa) { return }
     Write-Host "`nSinais: $($Sinais -join ', ')"
-    $escolha = Read-Host "Quais gravar? Enter = todos, ou digite separados por vírgula (ex.: OI,SIM)"
-    $lista = if ($escolha.Trim()) { $escolha.Split(",") | ForEach-Object { (Sem-Acentos $_).Trim().ToUpper() } | Where-Object { $_ } } else { $Sinais }
+    Write-Host "Letras do alfabeto (opcionais): A a Z e Ç"
+    Write-Host "Digite separados por vírgula. Exemplos: OI,SIM   ou   A,B,C   ou   A-E (de A até E)   ou   LETRAS (todas)"
+    $escolha = Read-Host "Quais gravar? (Enter = todos os sinais)"
+    $lista = if ("$escolha".Trim()) { Expandir-Escolha $escolha } else { $Sinais }
+    if (-not $lista) { return }
     $nada = Read-Host "Gravar também o NENHUM SINAL (_NADA) no final? [S/n]"
 
     Write-Host "`nEm cada janela: ESPAÇO começa, faça o sinal quando a borda ficar vermelha,"
     Write-Host "abaixe as mãos entre as gravações, D apaga a última, Q passa para o próximo."
     foreach ($sinal in $lista) {
-        Titulo "Próximo sinal: $sinal"
+        if ($sinal -in $Letras) {
+            Titulo "Próxima letra: $(if ($sinal -eq 'C_CEDILHA') { 'Ç' } else { $sinal })"
+            Write-Host "   Faça a letra com a mão parada, virada para a câmera (letras com movimento, como J, Z e Ç: faça o movimento completo)."
+        } else {
+            Titulo "Próximo sinal: $sinal"
+        }
         [void](Read-Host "Pressione Enter para abrir a câmera")
         Rodar @("scripts/desenvolvimento/coletar_dados.py", "--sinal", $sinal, "--pessoa", $pessoa, "--meta", "30")
     }
@@ -43,6 +52,27 @@ function Gravar-Sinais {
         Rodar @("scripts/desenvolvimento/coletar_dados.py", "--sinal", "_NADA", "--pessoa", $pessoa, "--meta", "60")
     }
     Ok "Gravação concluída. Para enviar, use a opção 'Gerar arquivo com minhas gravações'."
+}
+
+function Expandir-Escolha([string]$escolha) {
+    # "OI, a-c, Ç, letras" -> OI, A, B, C, C_CEDILHA, A..Z e C_CEDILHA
+    $lista = foreach ($item in $escolha.Split(",")) {
+        $item = $item.Trim().ToUpper()
+        if (-not $item) { continue }
+        if ($item -eq "LETRAS") { $Letras; continue }
+        if ($item -eq "Ç") { "C_CEDILHA"; continue }
+        if ($item -match "^([A-Z])\s*-\s*([A-Z])$") {
+            $Letras | Where-Object { $_.Length -eq 1 -and $_ -ge $Matches[1] -and $_ -le $Matches[2] }
+            continue
+        }
+        $item = (Sem-Acentos $item).Replace(" ", "")
+        if ($item -notin $Sinais -and $item -notin $Letras -and $item -ne "_NADA") {
+            Aviso "'$item' não é um sinal nem uma letra do projeto; ignorado."
+            continue
+        }
+        $item
+    }
+    return @($lista | Select-Object -Unique)
 }
 
 function Contar-Gravacoes {

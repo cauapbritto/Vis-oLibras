@@ -37,12 +37,16 @@ def montar_relatorio(rel: RelatorioDataset, detalhes: bool) -> list[str]:
     linhas = ["=" * 64, "ANÁLISE DO DATASET", "=" * 64]
     total, invalidas = len(rel.amostras), rel.invalidas()
     com_amostras = [c for c in config.CLASSES if rel.contagem(c) > 0]
+    letras = [config.rotulo_exibicao(c) for c in config.LETRAS if rel.contagem(c) > 0]
     tamanhos = ", ".join(str(t) for t in sorted(rel.tamanhos_vetor)) or "—"
 
     linhas += [
         f"Pasta do dataset      : {config.DIR_RAW}",
         f"Sinais cadastrados    : {len(config.SINAIS)} + {config.CLASSE_NADA} "
-        f"({len(com_amostras)} de {len(config.CLASSES)} classes com amostras)",
+        f"({len([c for c in config.CLASSES_OBRIGATORIAS if c in com_amostras])} de "
+        f"{len(config.CLASSES_OBRIGATORIAS)} com amostras)",
+        f"Letras (opcionais)    : {len(letras)} de {len(config.LETRAS)} com amostras"
+        + (f" ({', '.join(letras)})" if letras else ""),
         f"Amostras              : {total} ({total - len(invalidas)} válidas, {len(invalidas)} inválidas)",
         f"Frame bruto           : {config.TAM_FRAME_BRUTO} valores",
         f"Vetor de features     : {tamanhos} valores "
@@ -53,7 +57,7 @@ def montar_relatorio(rel: RelatorioDataset, detalhes: bool) -> list[str]:
         "AMOSTRAS VÁLIDAS POR SINAL",
         f"  {'sinal':<10} {'amostras':>8}  {'pessoas':<24} mãos predominantes",
     ]
-    for classe in config.CLASSES:
+    for classe in rel.classes_em_uso():
         n = rel.contagem(classe)
         pessoas = ", ".join(f"{p}:{q}" for p, q in sorted(rel.pessoas(classe).items())) or "—"
         perfis = ", ".join(f"{p} {q}" for p, q in rel.perfis(classe).most_common()) or "—"
@@ -114,7 +118,7 @@ def salvar_graficos(rel: RelatorioDataset) -> str:
         "xtick.color": TEXTO_SECUNDARIO, "ytick.color": TEXTO_SECUNDARIO,
         "axes.edgecolor": GRADE, "figure.facecolor": SUPERFICIE, "axes.facecolor": SUPERFICIE,
     })
-    classes = config.CLASSES
+    classes = rel.classes_em_uso()
     rotulos = [config.rotulo_exibicao(c) for c in classes]
     posicoes = np.arange(len(classes))
 

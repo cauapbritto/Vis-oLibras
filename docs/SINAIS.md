@@ -21,3 +21,14 @@ de cabeça). Referência sugerida: Dicionário de Libras do INES.
 | _NADA | — | — | Mãos paradas, abaixando, coçar o rosto, gestos aleatórios | — |
 
 **Mão dominante adotada:** _(preencher: direita ou esquerda)_
+
+## Letras do alfabeto manual (opcionais)
+
+Identificadores `A` a `Z` e `C_CEDILHA` (exibido como "Ç"; pasta sem acento). Usadas para
+soletrar nomes: letras seguidas viram uma palavra ("C A U A" -> "Caua"). Anote aqui as que
+têm movimento ou que o grupo faz de um jeito específico:
+
+| Letra | Observação (movimento, orientação da mão) |
+|---|---|
+| J, Z, Ç | têm movimento: gravar o movimento completo (confirmar as outras no dicionário) |
+| | |

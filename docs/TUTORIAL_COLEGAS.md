@@ -122,6 +122,21 @@ cabelo ou os óculos, mexa as mãos à toa. Isso ensina o sistema o que **não**
 > Precisou parar no meio? Feche a janela preta. O que já foi gravado fica salvo; depois
 > escolha a opção 3 de novo e digite só os sinais que faltam.
 
+### A7b. (Opcional) Gravar letras do alfabeto
+
+As letras servem para **soletrar nomes** ("Meu nome é C-A-U-A"). Na opção 3, quando o menu
+perguntar quais gravar, digite por exemplo:
+
+- `A-E` → grava de A até E (dá para ir ensinando aos poucos: depois `F-J`, e assim por diante)
+- `LETRAS` → grava o alfabeto inteiro (A a Z e Ç)
+- `A,N,C` → só essas letras
+
+Faça cada letra **com a mão parada, virada para a câmera**, do jeito do alfabeto manual de
+Libras (confiram juntos no [Dicionário do INES](https://dicionario.ines.gov.br/)). Algumas
+letras têm movimento (como J, Z e Ç; confiram as outras no dicionário): faça o movimento
+completo em cada gravação. A meta é a mesma:
+~30 gravações por letra.
+
 ### A8. Conferir e enviar as gravações (opções 4 e 5)
 
 - **Opção 4** mostra quantas gravações existem de cada sinal: deve aparecer ~30 em cada

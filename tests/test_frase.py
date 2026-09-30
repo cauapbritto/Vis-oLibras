@@ -121,3 +121,16 @@ def test_regras_sao_opcionais_e_plugaveis():
     g.adicionar("DIA", 2.0)
     assert g.sequencia == ["BOM", "DIA"]       # a sequência reconhecida não muda
     assert g.frase_atual == "BOM DIA"
+
+
+def test_letras_aparecem_juntas_e_contam_como_uma_palavra():
+    g, finalizadas = _g(max_palavras=3)
+    for i, sinal in enumerate(["EU", "NOME", "M", "A", "L", "A", "Q", "U", "I", "A", "S"]):
+        assert g.adicionar(sinal, float(i * 2))
+    assert finalizadas == []                            # 3 "palavras": EU, NOME e o nome soletrado
+    assert g.sequencia == ["EU", "NOME", "M-A-L-A-Q-U-I-A-S"]
+    assert g.glosa_atual == "EU NOME M-A-L-A-Q-U-I-A-S" and g.frase_atual == "EU NOME Malaquias"
+    g.remover_ultima()                                  # corrige a última letra
+    assert g.sequencia[-1] == "M-A-L-A-Q-U-I-A"
+    g.adicionar("OI", 30.0)                             # 4ª palavra: encerra a frase antes
+    assert finalizadas == ["EU NOME Malaquia"] and g.sequencia == ["OI"]

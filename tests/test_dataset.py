@@ -151,3 +151,13 @@ def test_juntar_gravacoes_e_reconstruir_metadata(dataset_vazio):
     assert sorted(l["arquivo"] for l in depois) == sorted(l["arquivo"] for l in antes)
     assert {l["pessoa"] for l in depois} == {"ana", "bia"} and all(l["data_hora"] for l in depois)
     assert dataset.analisar_dataset().inconsistencias == []
+
+
+def test_letras_sao_opcionais_na_analise(dataset_vazio):
+    _popular(4)
+    rel = dataset.analisar_dataset()
+    assert "A" not in rel.classes_em_uso()              # letra sem gravação: nem aparece
+    assert "A" not in rel.classes_com_poucas_amostras()
+    dataset.salvar_amostra(amostra(semente=7), "A", "ana")
+    rel = dataset.analisar_dataset()
+    assert "A" in rel.classes_em_uso() and "A" in rel.classes_com_poucas_amostras()
