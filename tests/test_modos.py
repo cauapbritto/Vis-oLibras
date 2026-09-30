@@ -101,7 +101,16 @@ def test_pacote_de_demonstracao_so_leva_o_necessario(tmp_path):
     arquivos = {a.as_posix() for a in empacotar.arquivos_do_pacote(RAIZ)}
     assert "src/libras/interface.py" in arquivos and "scripts/demonstracao/app.py" in arquivos
     assert "requirements.txt" in arquivos
+    assert {"INSTALAR.bat", "Vis-oLibras.bat", "windows/instalar.ps1", "windows/menu.ps1",
+            "windows/comum.ps1"} <= arquivos
     for proibido in ("src/libras/dataset.py", "src/libras/avaliacao.py", "src/libras/experimento.py",
                      "requirements-dev.txt"):
         assert proibido not in arquivos
     assert not any(a.startswith(("data/", "reports/", "tests/", "scripts/desenvolvimento/")) for a in arquivos)
+
+
+def test_instalador_windows_tem_finais_de_linha_do_windows():
+    """.bat com final de linha do Linux pode quebrar no cmd; o .gitattributes garante CRLF."""
+    for arquivo in ("INSTALAR.bat", "Vis-oLibras.bat", *sorted((RAIZ / "windows").glob("*.ps1"))):
+        conteudo = (RAIZ / arquivo).read_bytes()
+        assert b"\n" in conteudo and conteudo.count(b"\n") == conteudo.count(b"\r\n"), arquivo

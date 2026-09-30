@@ -1,7 +1,8 @@
 """Gera o pacote do MODO USUÁRIO: só o necessário para a demonstração (desenvolvimento).
 
 Inclui o núcleo e a aplicação (libras.MODULOS_NUCLEO + MODULOS_APLICACAO), os
-scripts de demonstração, o requirements.txt e os modelos (classificador
+scripts de demonstração, o instalador de um clique do Windows (INSTALAR.bat,
+Vis-oLibras.bat e windows/), o requirements.txt e os modelos (classificador
 treinado e, se já baixados, os modelos do MediaPipe - útil em redes que
 bloqueiam o download). NÃO inclui dataset, relatórios, testes, scripts de
 treino nem módulos de desenvolvimento.
@@ -10,8 +11,8 @@ Uso:
     python scripts/desenvolvimento/empacotar_app.py
     python scripts/desenvolvimento/empacotar_app.py --saida dist/demo.zip
 
-No computador da apresentação: descompactar, instalar o requirements.txt e
-rodar python scripts/demonstracao/app.py (instruções em LEIA-ME.txt no zip).
+No computador da apresentação: descompactar e dar dois cliques em INSTALAR.bat
+(Windows), ou seguir os comandos do LEIA-ME.txt do zip.
 """
 
 import argparse
@@ -32,7 +33,13 @@ LEIA_ME = """VIS-OLIBRAS - PACOTE DE DEMONSTRAÇÃO
 Requisitos: Python 3.10 a 3.12 (recomendado 3.11) e uma webcam.
 No Linux: sudo apt install python3-tk espeak-ng alsa-utils libegl1 libgles2
 
-Windows (PowerShell), dentro desta pasta:
+Windows, jeito fácil (precisa de internet só na instalação):
+
+    1. Dois cliques em INSTALAR.bat (instala o Python, se faltar, e as bibliotecas).
+       Se aparecer "O Windows protegeu o computador": Mais informações > Executar assim mesmo.
+    2. Dois cliques no atalho "Vis-oLibras" da Área de Trabalho > opção 1.
+
+Windows (PowerShell), passo a passo, dentro desta pasta:
 
     py -3.11 -m venv .venv
     .venv\\Scripts\\Activate.ps1
@@ -61,6 +68,8 @@ def arquivos_do_pacote(raiz: Path) -> list[Path]:
     arquivos = [Path("src/libras") / f"{m}.py" for m in modulos]
     arquivos += sorted(p.relative_to(raiz) for p in (raiz / "scripts/demonstracao").glob("*.py"))
     arquivos.append(Path("requirements.txt"))
+    arquivos += [Path("INSTALAR.bat"), Path("Vis-oLibras.bat")]
+    arquivos += sorted(p.relative_to(raiz) for p in (raiz / "windows").glob("*.ps1"))
     for modelo in (config.ARQ_MODELO, config.ARQ_CLASSES, config.ARQ_MODELO_INFO,
                    config.ARQ_HAND_LANDMARKER, config.ARQ_POSE_LANDMARKER):
         if modelo.is_file():

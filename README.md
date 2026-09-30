@@ -42,7 +42,17 @@ verificado automaticamente pelos testes (`tests/test_modos.py`).
 
 ### Instalação
 
-**Windows (PowerShell)**, na pasta do projeto:
+**Windows, jeito fácil (um clique):** extraia o zip do projeto e dê dois cliques em
+**`INSTALAR.bat`**. Ele instala o Python 3.11 (pelo `winget`, se faltar), cria o `.venv`,
+instala as bibliotecas (com nova tentativa em redes que interceptam HTTPS), baixa os
+modelos do MediaPipe, confere a voz em português e cria o atalho **Vis-oLibras** na Área
+de Trabalho. O atalho (ou `Vis-oLibras.bat`) abre um menu numerado com a aplicação, o
+teste da câmera, a gravação, o envio/junção de gravações, a análise, o treino e o teste
+controlado. Se o Windows mostrar "O Windows protegeu o computador": **Mais informações** →
+**Executar assim mesmo**. Os scripts ficam em `windows/`; o log da instalação, em
+`instalar.log`.
+
+**Windows (PowerShell), passo a passo**, na pasta do projeto:
 
 ```powershell
 py -3.11 -m venv .venv
@@ -112,9 +122,11 @@ No computador de desenvolvimento (com o modelo treinado):
 python scripts/desenvolvimento/empacotar_app.py   # gera dist/Vis-oLibras-demo.zip
 ```
 
-O zip leva só o necessário (código da aplicação, `requirements.txt` e os modelos,
-inclusive os do MediaPipe — útil em redes que bloqueiam o download) e um `LEIA-ME.txt`
-com os comandos.
+O zip leva só o necessário (código da aplicação, `requirements.txt`, os modelos,
+inclusive os do MediaPipe — útil em redes que bloqueiam o download — e o instalador de um
+clique) e um `LEIA-ME.txt` com os comandos. No computador da apresentação: extrair, dois
+cliques em `INSTALAR.bat` (instala só o `requirements.txt`) e depois no atalho
+**Vis-oLibras** → opção 1.
 
 ---
 
@@ -249,6 +261,7 @@ models/                     modelos do MediaPipe e classificador treinado
 reports/                    métricas e gráficos (desenvolvimento)
 tests/                      testes automatizados
 docs/                       arquitetura e descrição dos sinais
+windows/                    instalador de um clique e menu (INSTALAR.bat, Vis-oLibras.bat)
 ```
 
 Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 2.

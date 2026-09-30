@@ -35,3 +35,7 @@ Thumbs.db
 
 # Imagens baixadas automaticamente pelos testes
 tests/.cache/
+
+# Instalador de um clique (Windows): log e gravações para enviar
+instalar.log
+gravacoes_*.zip
