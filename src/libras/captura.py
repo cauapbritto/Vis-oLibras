@@ -77,9 +77,15 @@ class ProcessadorCamera(threading.Thread):
         try:
             self._eventos.put(("status", "Abrindo a câmera..."))
             camera.abrir()
-            if camera.imagem_suspeita:
-                self._eventos.put(("aviso", "A imagem da câmera parece com defeito (listras). Escolha outra "
-                                            "câmera na lista ou outro modo em Configurações > Câmera."))
+            if camera.defeito == "preta":
+                self._eventos.put(("aviso", "A câmera está mandando imagem preta. Confira se a tampa de "
+                                            "privacidade da webcam está aberta, se outro programa (Logi Tune, "
+                                            "Teams) não está usando a câmera e se o Windows permite o acesso "
+                                            "(Configurações > Privacidade e segurança > Câmera)."))
+            elif camera.imagem_suspeita:
+                self._eventos.put(("aviso", f"A imagem da câmera parece com defeito ({camera.defeito}). "
+                                            "Escolha outra câmera na lista ou outro modo em "
+                                            "Configurações > Câmera (ou use a opção D do menu)."))
             self._eventos.put(("status", "Carregando o MediaPipe..."))
             pipeline = PipelineVisao(self.classificador, self.estabilizador)
             self.pipeline = pipeline

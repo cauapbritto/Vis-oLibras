@@ -66,7 +66,18 @@ def main() -> int:
 
     melhor = melhor_combinacao(resultados)
     if melhor is None:
-        print("\nNenhuma combinação deu imagem boa. Tente:")
+        print("\nNenhuma combinação deu imagem boa.")
+        if any(r.defeito == "preta" for r in resultados):
+            print("Imagem preta quase sempre é a câmera bloqueada, não defeito do programa:")
+            print("   - tampa de privacidade: várias webcams Logitech têm uma tampinha deslizante na frente;")
+            print("   - Windows: Configurações > Privacidade e segurança > Câmera > ligue \"Acesso à câmera\"")
+            print("     e \"Permitir que aplicativos da área de trabalho acessem a câmera\";")
+            print("   - teclado de notebook: algumas marcas têm uma tecla (F8/F10) que desliga a câmera;")
+        if any(r.lenta for r in resultados):
+            print("Poucos quadros por segundo costuma ser a porta USB ou falta de luz:")
+            print("   - ligue a webcam direto no computador (sem hub nem extensão), de preferência USB 3 (azul);")
+            print("   - no Logi Tune / Logitech Capture, desligue \"RightLight\" / pouca luz, que reduz o FPS;")
+        print("Tente também:")
         print("   - abrir o app Câmera do Windows: se lá também falhar, o problema é a câmera ou o driver;")
         print("   - trocar a webcam de porta USB (de preferência direto no computador, sem hub);")
         print("   - fechar programas da própria câmera (ex.: Logitech Capture, Logi Tune);")

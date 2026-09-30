@@ -220,3 +220,29 @@ def test_diagnostico_escolhe_a_combinacao_boa_mais_rapida(monkeypatch):
     assert not por_modo[(1, "dshow_mjpg")].abriu and (1, "msmf") not in por_modo   # índice 1 pulado
     melhor = modulo_camera.melhor_combinacao(resultados)
     assert (melhor.indice, melhor.modo) == (0, "msmf")
+
+
+def test_imagem_preta_e_detectada_mas_escuro_com_detalhe_nao():
+    assert modulo_camera.defeito_imagem(np.zeros((48, 64, 3), dtype=np.uint8)) == "preta"
+    escuro = (_natural() // 8).astype(np.uint8)   # quarto com pouca luz, mas com imagem
+    assert modulo_camera.defeito_imagem(escuro) != "preta"
+
+
+def test_camera_que_comeca_preta_nao_e_descartada(monkeypatch):
+    """Webcams mandam alguns quadros pretos enquanto ajustam a exposição."""
+    monkeypatch.setattr(modulo_camera.time, "sleep", lambda _s: None)
+    quadros = [np.zeros((48, 64, 3), dtype=np.uint8)] * 3
+
+    class ComecaPreta(_CapturaPorModo):
+        def read(self):
+            return True, (quadros.pop(0) if quadros else _natural())
+
+    monkeypatch.setattr(modulo_camera.cv2, "VideoCapture", lambda *a: ComecaPreta(0))
+    camera = modulo_camera.Camera(modo="padrao")
+    camera.abrir()
+    assert not camera.imagem_suspeita
+
+
+def test_diagnostico_marca_camera_lenta():
+    teste = modulo_camera.TesteCamera(0, "dshow", abriu=True, frame=_natural(), fps=1.0)
+    assert teste.lenta and not teste.bom and "lenta" in teste.descricao

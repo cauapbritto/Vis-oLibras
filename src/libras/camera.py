@@ -70,8 +70,23 @@ def _primeiro_quadro(captura, tentativas: int = 10) -> np.ndarray | None:
     return None
 
 
+def _quadro_para_avaliar(captura, espera_s: float = 2.0) -> np.ndarray | None:
+    """Primeiro quadro; se vier preto, lê mais um pouco (algumas webcams começam pretas
+    enquanto ajustam a exposição) antes de concluir que a imagem é preta mesmo."""
+    frame = _primeiro_quadro(captura)
+    limite = time.perf_counter() + espera_s
+    while frame is not None and defeito_imagem(frame) == "preta" and time.perf_counter() < limite:
+        ok, novo = captura.read()
+        if ok and novo is not None:
+            frame = novo
+    return frame
+
+
 def defeito_imagem(frame: np.ndarray) -> str | None:
-    """Por que a imagem parece lida no formato errado ("listras" ou "ruído"), ou None.
+    """Por que a imagem parece com defeito ("preta", "listras" ou "ruído"), ou None.
+
+    - preta: escura e sem detalhe (tampa de privacidade fechada ou acesso bloqueado
+      pelo Windows: a câmera "abre", mas manda quadros pretos);
 
     - listras: vizinhos na horizontal mudam muito mais que na vertical (formato de
       cor trocado: listras verticais roxas e verdes);
@@ -80,6 +95,8 @@ def defeito_imagem(frame: np.ndarray) -> str | None:
     if frame is None or frame.ndim < 2 or frame.shape[0] < 8 or frame.shape[1] < 8:
         return None
     cinza = frame.astype(np.float32).mean(axis=2) if frame.ndim == 3 else frame.astype(np.float32)
+    if cinza.mean() < 12 and cinza.std() < 6:
+        return "preta"
     horizontal = float(np.abs(np.diff(cinza[::4, :], axis=1)).mean())
     vertical = float(np.abs(np.diff(cinza[:, ::4], axis=0)).mean())
     if horizontal > 20 and horizontal > 4 * max(vertical, 1.0):
@@ -115,6 +132,7 @@ class Camera:
         self.modo = config.MODO_CAMERA if modo is None else modo   # lido agora: muda nas Configurações
         self.modo_usado: str | None = None      # o modo que funcionou (para diagnóstico)
         self.imagem_suspeita = False            # nenhum modo deu imagem sem defeito
+        self.defeito: str | None = None         # defeito da imagem, quando suspeita
         self.largura = largura
         self.altura = altura
         self.espelhar = espelhar
@@ -125,23 +143,24 @@ class Camera:
     def abrir(self) -> None:
         """Abre a câmera tentando os modos de _candidatos() até ter uma imagem boa."""
         abriu = False
-        reserva = None   # primeiro modo que mandou imagem, mesmo com defeito
+        reserva = None   # (modo, defeito) do primeiro modo que mandou imagem, mesmo com defeito
         for modo in _candidatos(self.modo):
             captura = _abrir_modo(self.indice, modo, self.largura, self.altura)
             if captura is None:
                 continue
             abriu = True
-            frame = _primeiro_quadro(captura)
-            if frame is not None and not imagem_corrompida(frame):
-                self._usar(captura, modo, suspeita=False)
+            frame = _quadro_para_avaliar(captura)
+            defeito = defeito_imagem(frame) if frame is not None else None
+            if frame is not None and defeito is None:
+                self._usar(captura, modo, None)
                 return
             captura.release()   # o Windows não deixa abrir a mesma câmera em dois modos ao mesmo tempo
             if frame is not None and reserva is None:
-                reserva = modo
+                reserva = (modo, defeito)
         if reserva is not None:   # só imagens com defeito: usa a primeira e avisa
-            captura = _abrir_modo(self.indice, reserva, self.largura, self.altura)
+            captura = _abrir_modo(self.indice, reserva[0], self.largura, self.altura)
             if captura is not None and _primeiro_quadro(captura) is not None:
-                self._usar(captura, reserva, suspeita=True)
+                self._usar(captura, reserva[0], reserva[1])
                 return
         if not abriu:
             raise ErroCamera(
@@ -155,10 +174,11 @@ class Camera:
             "Escolha outra câmera na lista ou reconecte o dispositivo."
         )
 
-    def _usar(self, captura, modo: str, suspeita: bool) -> None:
+    def _usar(self, captura, modo: str, defeito: str | None) -> None:
         self._captura = captura
         self.modo_usado = modo
-        self.imagem_suspeita = suspeita
+        self.defeito = defeito
+        self.imagem_suspeita = defeito is not None
         self._falhas_seguidas = 0
 
     def ler(self) -> np.ndarray | None:
@@ -225,6 +245,9 @@ def listar_cameras(maximo: int = config.MAX_CAMERAS_PROCURAR) -> list[int]:
     return encontradas
 
 
+FPS_MINIMO = 5   # abaixo disso o reconhecimento não acompanha os sinais
+
+
 @dataclass
 class TesteCamera:
     indice: int
@@ -235,8 +258,12 @@ class TesteCamera:
     defeito: str | None = None
 
     @property
+    def lenta(self) -> bool:
+        return self.frame is not None and self.fps < FPS_MINIMO
+
+    @property
     def bom(self) -> bool:
-        return self.frame is not None and self.defeito is None
+        return self.frame is not None and self.defeito is None and not self.lenta
 
     @property
     def descricao(self) -> str:
@@ -245,7 +272,12 @@ class TesteCamera:
         if self.frame is None:
             return "abriu, sem imagem"
         altura, largura = self.frame.shape[:2]
-        estado = "imagem boa" if self.defeito is None else f"com defeito ({self.defeito})"
+        if self.defeito is not None:
+            estado = f"com defeito ({self.defeito})"
+        elif self.lenta:
+            estado = "lenta demais"
+        else:
+            estado = "imagem boa"
         return f"{largura}x{altura}, {self.fps:.0f} fps, {estado}"
 
 
@@ -264,7 +296,7 @@ def diagnosticar(maximo: int = config.MAX_CAMERAS_PROCURAR, quadros: int = 15) -
                 continue
             teste.abriu = True
             try:
-                frame = _primeiro_quadro(captura)
+                frame = _quadro_para_avaliar(captura)
                 if frame is not None:
                     inicio, lidos = time.perf_counter(), 0
                     for _ in range(quadros):

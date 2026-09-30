@@ -27,7 +27,7 @@ class CapturaFalsa:
 
     def read(self):
         time.sleep(0.005)
-        return True, np.zeros((48, 64, 3), dtype=np.uint8)
+        return True, np.full((48, 64, 3), 128, dtype=np.uint8)
 
     def release(self):
         pass
