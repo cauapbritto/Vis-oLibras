@@ -1,0 +1,28 @@
+# TABELA DE FRASES DO VIS-OLIBRAS
+# ===============================
+# Converte sequências de sinais reconhecidos em português, para mostrar e falar.
+# O que não estiver aqui continua aparecendo como glosa (os sinais em MAIÚSCULAS).
+#
+# Formato: uma frase por linha,   SINAIS = texto em português
+#   - os sinais são os nomes do projeto: OI EU MEU NOME BOM DIA OBRIGADO SIM NAO AJUDA
+#   - "#" começa um comentário (a linha, ou o resto dela, é ignorada)
+#   - vale sempre a frase MAIS LONGA que encaixar: "BOM DIA" ganha de "BOM" sozinho
+#
+# Para conferir depois de editar (sem abrir a câmera):
+#   python scripts/demonstracao/testar_frases.py            revisa o arquivo
+#   python scripts/demonstracao/testar_frases.py EU NOME    mostra o resultado
+#
+# IMPORTANTE: revisem com quem conhece Libras antes da apresentação. As linhas
+# comentadas abaixo ficaram de fora porque dependem de como o grupo faz o sinal.
+
+OI        = Oi!
+BOM DIA   = Bom dia!
+OBRIGADO  = Obrigado!
+SIM       = Sim.
+NAO       = Não.
+MEU NOME  = Meu nome é
+EU NOME   = Meu nome é
+
+# A confirmar:
+# EU AJUDA  = Eu preciso de ajuda.     (AJUDAR muda de direção em Libras)
+# AJUDA     = Ajuda!

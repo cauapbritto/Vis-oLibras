@@ -34,6 +34,7 @@ from libras.estabilizador import Estabilizador
 from libras.extrator import ErroModelo
 from libras.frase import GerenciadorSentenca
 from libras.pipeline import PipelineVisao
+from libras.traducao import carregar_tabela_padrao
 from libras.voz import Voz
 
 COR_CINZA = (170, 170, 170)
@@ -86,11 +87,17 @@ def executar(args) -> None:
     voz = None if args.sem_voz else Voz(ao_erro=lambda m: print(f"  [voz] {m}"))
 
     def ao_finalizar(frase: str) -> None:
-        print(f"  frase: {frase}")
+        glosa = sentenca.glosa_final
+        print(f"  frase: {frase}" + (f"   (sinais: {glosa})" if glosa != frase else ""))
         if voz is not None and config.FALAR_AO_FINALIZAR:
             voz.falar(GerenciadorSentenca.texto_para_fala(frase))
 
-    sentenca = GerenciadorSentenca(ao_finalizar=ao_finalizar)
+    tabela = carregar_tabela_padrao()
+    if tabela is not None:
+        print(f"Tabela de frases: {len(tabela)} frases ({config.ARQ_FRASES.name})")
+        for aviso in tabela.avisos:
+            print(f"  [AVISO] {aviso}")
+    sentenca = GerenciadorSentenca(ao_finalizar=ao_finalizar, tabela=tabela)
     aceita = None  # (palavra, momento) para o destaque na tela
 
     print(f"Modelo: {classificador.info.get('descricao')} | classes: {', '.join(classificador.classes)}")

@@ -27,6 +27,7 @@ from libras.classificador import Classificador, ErroClassificador, carregar_clas
 from libras.desenho import descrever_maos, fonte_com_acentos
 from libras.estabilizador import Estabilizador
 from libras.frase import GerenciadorSentenca
+from libras.traducao import carregar_tabela_padrao
 from libras.voz import Voz
 
 INTERVALO_MS = 30
@@ -93,7 +94,8 @@ class AplicacaoLibras(ctk.CTk):
         self._imagem_tk = None
 
         self.classificador = self._carregar_modelo()
-        self.sentenca = GerenciadorSentenca(ao_finalizar=self._ao_finalizar)
+        self.tabela = carregar_tabela_padrao()  # frases.txt (None se desligada no config)
+        self.sentenca = GerenciadorSentenca(ao_finalizar=self._ao_finalizar, tabela=self.tabela)
         # Sem callback: a thread da voz não pode mexer no Tkinter. Os erros dela
         # são lidos em self.voz.erro, na thread da interface (_ciclo).
         self.voz = Voz()
@@ -108,6 +110,11 @@ class AplicacaoLibras(ctk.CTk):
         self.bind("<space>", lambda _e: self._finalizar_frase())
         self.bind("<BackSpace>", lambda _e: self._remover_ultima())
         self.bind("<KeyPress-c>", lambda _e: self._limpar())
+        if self.tabela is not None and self.tabela.avisos:
+            for aviso in self.tabela.avisos:
+                print(f"[AVISO] frases.txt: {aviso}")
+            self.after(500, lambda: self._mostrar_aviso(
+                f"frases.txt: {self.tabela.avisos[0]}" + (" (+ outros no terminal)" if len(self.tabela.avisos) > 1 else "")))
         self.after(INTERVALO_MS, self._ciclo)
 
     # --- inicialização ------------------------------------------------------------
@@ -183,12 +190,19 @@ class AplicacaoLibras(ctk.CTk):
         self.lbl_sequencia = ctk.CTkLabel(sequencia, text="—", font=ctk.CTkFont(size=22),
                                           wraplength=420, justify="left", anchor="w")
         self.lbl_sequencia.pack(fill="x", padx=16, pady=(0, 12))
+        # prévia em português (tabela de frases); só aparece quando algum trecho foi convertido
+        self.lbl_previa = ctk.CTkLabel(sequencia, text="", font=ctk.CTkFont(size=16),
+                                       text_color=COR_TEXTO_SECUNDARIO, wraplength=420, justify="left", anchor="w")
 
         final = Cartao(direita, "Frase final")
         final.pack(fill="x", pady=(0, 12))
         self.lbl_final = ctk.CTkLabel(final, text="—", font=ctk.CTkFont(size=24, weight="bold"),
                                       text_color=COR_FRASE, wraplength=420, justify="left", anchor="w")
         self.lbl_final.pack(fill="x", padx=16, pady=(0, 12))
+        # glosa (sinais feitos) embaixo do português, quando forem diferentes
+        self.lbl_glosa_final = ctk.CTkLabel(final, text="", font=ctk.CTkFont(size=13),
+                                            text_color=COR_TEXTO_SECUNDARIO, wraplength=420,
+                                            justify="left", anchor="w")
 
         botoes = ctk.CTkFrame(direita, fg_color="transparent")
         botoes.pack(fill="x")
@@ -322,9 +336,27 @@ class AplicacaoLibras(ctk.CTk):
             self.lbl_conf.configure(text="nenhum sinal" if self.processador else "0%")
         self.lbl_confirmado.configure(text=config.rotulo_exibicao(s.ultimo_confirmado) if s.ultimo_confirmado else "—")
         self.lbl_sequencia.configure(text="  ·  ".join(s.sequencia) or "—")
+        traducao = s.traducao_atual
+        self._mostrar_opcional(self.lbl_previa, f"→ {traducao.texto}" if traducao.convertida else "",
+                               depois_de=self.lbl_sequencia)
         self.lbl_final.configure(text=s.frase_final or "—")
+        glosa = s.glosa_final if config.MOSTRAR_GLOSA and s.glosa_final != s.frase_final else ""
+        self._mostrar_opcional(self.lbl_glosa_final, f"Sinais: {glosa}" if glosa else "", depois_de=self.lbl_final)
         if self.voz.disponivel:
             self.ind_voz.definir("falando..." if self.voz.falando else "pronta", COR_OK)
+
+    @staticmethod
+    def _mostrar_opcional(rotulo: ctk.CTkLabel, texto: str, depois_de) -> None:
+        """Mostra o rótulo com `texto` logo abaixo de `depois_de`, ou o esconde se vazio."""
+        if texto:
+            if rotulo.cget("text") != texto:
+                rotulo.configure(text=texto)
+            if not rotulo.winfo_manager():
+                rotulo.pack(fill="x", padx=16, pady=(0, 12), after=depois_de)
+                depois_de.pack_configure(pady=(0, 2))
+        elif rotulo.winfo_manager():
+            rotulo.pack_forget()
+            depois_de.pack_configure(pady=(0, 12))
 
     def _mostrar_aviso(self, texto: str) -> None:
         """Mostra um aviso por 4 s. Chamado a cada frame pelo mesmo aviso (ex.: ombros

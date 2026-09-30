@@ -570,17 +570,40 @@ Essa classe **não depende de câmera** — recebe `(sinal, confiança, tempo)` 
 3. Limite de segurança: `MAX_PALAVRAS = 8`.
 4. Correção manual: `BACKSPACE` remove a última palavra; `C` limpa.
 
-### 10.2 Gerenciador de sentença (sem tradução inventada)
+### 10.2 Gerenciador de sentença e tabela de frases (sem tradução inventada)
 
 `frase.GerenciadorSentenca` é independente da visão e separa quatro estados: **sinal atual**
 (o que o modelo vê agora), **último confirmado**, **sequência** e **frase final**. Funções:
 adicionar (com proteção extra contra repetição involuntária), remover a última, limpar,
 finalizar (botão, Espaço, pausa ou frase cheia).
 
-O MVP **não traduz** Libras para português: a frase é a própria sequência de sinais (glosa),
-ex.: "EU NOME CAUA". Libras tem gramática própria, e combinações como "EU AJUDA" são ambíguas
-("eu ajudo"? "me ajude"?). A arquitetura aceita `regras` (funções palavras → palavras)
-aplicadas antes de montar o texto, para regras validadas no futuro.
+O sistema **não traduz** a gramática da Libras: a frase é a sequência de sinais (glosa), ex.:
+"EU NOME CAUA". Libras tem gramática própria, e combinações como "EU AJUDA" são ambíguas
+("eu ajudo"? "me ajude"?).
+
+Para frases conhecidas, há a **tabela de frases** (`traducao.TabelaFrases`, lida do
+`frases.txt` na raiz do projeto), escrita e revisada pelo grupo:
+
+```
+BOM DIA   = Bom dia!
+MEU NOME  = Meu nome é
+```
+
+- Conversão da esquerda para a direita, sempre com a frase cadastrada **mais longa** que
+  encaixa ("BOM DIA" ganha de "BOM"). Trechos sem frase continuam em glosa, em maiúsculas,
+  para ficar claro que não foram convertidos: `AJUDA EU NOME` → "AJUDA Meu nome é".
+- Maiúscula no início, depois de pontuação final ou depois de glosa; minúscula logo após
+  outra frase da tabela sem pontuação.
+- O gerenciador guarda as duas versões: `frase_final` (mostrada e falada) e `glosa_final`
+  (mostrada em letra pequena embaixo, se `MOSTRAR_GLOSA`). Sem tabela
+  (`USAR_TABELA_FRASES = False` ou sem arquivo), frase = glosa, como antes.
+- A leitura avisa, com o número da linha, formato errado, sinal desconhecido (erro de
+  digitação), `_NADA` em frase e frases repetidas. `testar_frases.py` (menu → F) confere o
+  arquivo sem abrir a câmera. Aceita UTF-8 (com ou sem BOM) e ANSI (Bloco de Notas antigo).
+- O reconhecimento, o dataset e o modelo não mudam: a tabela age só sobre as palavras já
+  confirmadas.
+
+`regras` (funções palavras → palavras) continuam disponíveis e são aplicadas antes da tabela.
 
 ---
 
@@ -665,7 +688,7 @@ tentativas registradas. Os metadados da sessão (semente, modelo, limiares) fica
 | Features | posição normalizada | + velocidades, ângulos dos dedos, expressão facial (Face Landmarker) |
 | Voz | pyttsx3 | Piper TTS |
 | Interface | janela OpenCV | Tkinter/Streamlit/web |
-| Frases | dicionário | regras gramaticais ou modelo de linguagem |
+| Frases | tabela de frases do grupo (`frases.txt`) | regras gramaticais ou modelo de linguagem |
 
 ### 13.3 Boas práticas que valem desde o início
 

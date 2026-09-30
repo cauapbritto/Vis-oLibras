@@ -27,7 +27,8 @@ internet, eles são pulados (aparecem como "skipped"), sem falhar.
 | Classificação | `test_classificador.py`, `test_reconhecedor.py` | probabilidades somam 1; fluxo completo com landmarks simulados; aceno × mão parada no mesmo lugar |
 | Estabilidade temporal | `test_estabilizador.py`, `test_reconhecedor.py` | NOME ×5 → um NOME; sinal segurado por 10 s → uma palavra; confiança baixa; "piscadas" |
 | Cooldown | `test_estabilizador.py` | cooldown geral; cooldown da mesma palavra; liberação (_NADA) |
-| Montagem da frase | `test_frase.py` | EU NOME CAUA; quatro estados separados; pausa; frase cheia; regras plugáveis |
+| Montagem da frase | `test_frase.py` | EU NOME CAUA; quatro estados separados; pausa; frase cheia; regras plugáveis; português + glosa com tabela |
+| Tabela de frases | `test_traducao.py` | frase mais longa ganha; trechos sem frase ficam em glosa; maiúsculas; avisos com número da linha; UTF-8/ANSI/arquivo ausente; `frases.txt` do projeto sem avisos |
 | Palavras repetidas | `test_frase.py`, `test_estabilizador.py` | repetição involuntária ignorada; intencional aceita |
 | Limpeza da frase | `test_frase.py`, `test_reconhecedor.py` | remover a última; limpar tudo; limpar zera buffer e estabilizador |
 | Voz | `test_voz.py` | texto vazio; fala em andamento (ignorar/enfileirar); sem sistema de voz; erro de áudio com recuperação |
@@ -87,5 +88,7 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 - [ ] Iniciar/parar 3 vezes seguidas sem travar
 - [ ] Remover última palavra, Limpar frase e Finalizar frase funcionam (e os atalhos Backspace, C, Espaço)
 - [ ] "Sinal detectado agora", "Último confirmado", "Sequência" e "Frase final" mudam como esperado
+- [ ] Uma frase cadastrada no `frases.txt` (ex.: BOM DIA) aparece em português na prévia e na frase final, com "Sinais: ..." embaixo, e é falada em português
+- [ ] Uma sequência sem frase cadastrada continua aparecendo como glosa
 - [ ] Fechar a janela com a câmera ligada encerra o programa e libera a câmera
 - [ ] 10 minutos ligada sem travar nem ficar lenta

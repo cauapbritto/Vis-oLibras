@@ -91,6 +91,28 @@ def test_exibicao_e_texto_para_fala():
     assert GerenciadorSentenca.texto_para_fala("EU NÃO") == "eu não"
 
 
+def test_tabela_de_frases_converte_e_guarda_a_glosa():
+    from libras.traducao import TabelaFrases
+    tabela = TabelaFrases.de_texto("EU NOME = Meu nome é\nOBRIGADO = Obrigado!")
+    g, finalizadas = _g(tabela=tabela)
+    for i, palavra in enumerate(["EU", "NOME", "SIM"]):
+        g.adicionar(palavra, float(i * 2))
+    assert g.sequencia == ["EU", "NOME", "SIM"]          # a sequência reconhecida não muda
+    assert g.frase_atual == "Meu nome é SIM" and g.glosa_atual == "EU NOME SIM"
+    assert g.finalizar() == "Meu nome é SIM"
+    assert finalizadas == ["Meu nome é SIM"]             # o callback recebe o português
+    assert g.frase_final == "Meu nome é SIM" and g.glosa_final == "EU NOME SIM"
+    g.limpar()
+    assert g.frase_final == g.glosa_final == ""
+
+
+def test_sem_tabela_frase_e_glosa_sao_iguais():
+    g, _ = _g()
+    g.adicionar("OBRIGADO", 0.0)
+    g.finalizar()
+    assert g.frase_final == g.glosa_final == "OBRIGADO"
+
+
 def test_regras_sao_opcionais_e_plugaveis():
     def juntar(palavras):  # exemplo de regra futura
         return ["BOM DIA" if p == "BOM" else p for p in palavras if p != "DIA"]

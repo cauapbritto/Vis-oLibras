@@ -57,6 +57,7 @@ na pasta do projeto). Aparece o menu:
    APRESENTAÇÃO
      1  Abrir a aplicação
      V  Testar a voz
+     F  Conferir a tabela de frases (frases.txt)
      2  Testar a câmera
 
    GRAVAR E TREINAR
@@ -135,7 +136,9 @@ pontos das mãos, **nenhuma imagem ou vídeo seu é gravado**.
 Quando o responsável enviar o modelo treinado (3 arquivos: `classificador.joblib`,
 `classes.json` e `classificador_info.json`), copie-os para a pasta `models` do projeto.
 Abra o menu e escolha a **opção 1**. Clique em **Iniciar câmera** e faça os sinais,
-**abaixando as mãos entre um e outro**.
+**abaixando as mãos entre um e outro**. Sequências cadastradas no `frases.txt` (ex.: BOM
+DIA, MEU NOME) aparecem e são faladas em português, com os sinais feitos em letra pequena
+embaixo; as outras aparecem como a sequência de sinais.
 
 Para gerar as métricas do trabalho, faça também o **teste controlado (opção 9)**: cada
 sinal 10 vezes. **ESPAÇO** começa, faça o sinal pedido quando aparecer **"JÁ!"**, **D**

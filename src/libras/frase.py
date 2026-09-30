@@ -8,19 +8,19 @@ Quatro estados diferentes, que a interface mostra separadamente:
     sinal_atual         o que o modelo está vendo AGORA (ainda não confirmado)
     ultimo_confirmado   a última palavra aceita pelo estabilizador
     palavras            a sequência confirmada da frase em construção
-    frase_final         a última frase encerrada (a que é falada)
+    frase_final         a última frase encerrada (a que é mostrada e falada)
 
-O MVP NÃO traduz Libras para português: a frase é a própria sequência de sinais
-(glosa), na ordem em que foram feitos - "EU NOME CAUA". Libras tem gramática
-própria, e uma tradução correta exige regras linguísticas validadas.
+O sistema NÃO traduz a gramática da Libras. A frase é a sequência de sinais
+(glosa), na ordem em que foram feitos - "EU NOME CAUA" - e, se houver uma
+`tabela` (traducao.TabelaFrases, lida do frases.txt), os trechos cadastrados
+pelo grupo viram português ("EU NOME" -> "Meu nome é"). Sem tabela, tudo
+funciona como antes: frase = glosa. As duas versões ficam disponíveis:
 
-A arquitetura está preparada para isso: `regras` é uma lista de funções
-palavras -> palavras aplicada antes de montar o texto. Exemplo de regra futura
-(só inclua regras validadas com quem conhece Libras):
+    frase_atual / frase_final   português onde houve frase cadastrada, glosa no resto
+    glosa_atual / glosa_final   só a sequência de sinais
 
-    def juntar_bom_dia(palavras):   # ["BOM", "DIA"] -> ["BOM DIA"]
-        ...
-    GerenciadorSentenca(regras=[juntar_bom_dia])
+`regras` (lista de funções palavras -> palavras) continua disponível e é
+aplicada antes da tabela.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from __future__ import annotations
 from typing import Callable
 
 from libras import config
+from libras.traducao import TabelaFrases, Traducao
 
 RegraTexto = Callable[[list[str]], list[str]]
 
@@ -40,11 +41,15 @@ class GerenciadorSentenca:
         janela_repeticao_s: float = config.JANELA_REPETICAO_S,
         pausa_s: float = config.PAUSA_FRASE_S,
         max_palavras: int = config.MAX_PALAVRAS,
+        tabela: TabelaFrases | None = None,
     ) -> None:
         """`ao_finalizar(texto)` é chamado sempre que uma frase é encerrada
-        (manualmente, por pausa ou por estar cheia) - ex.: mostrar e falar."""
+        (manualmente, por pausa ou por estar cheia) - ex.: mostrar e falar.
+        `texto` é a frase em português (= glosa sem tabela); a glosa fica em
+        `glosa_final`."""
         self.ao_finalizar = ao_finalizar
         self.regras = regras or []
+        self.tabela = tabela
         self.janela_repeticao_s = janela_repeticao_s
         self.pausa_s = pausa_s
         self.max_palavras = max_palavras
@@ -55,6 +60,7 @@ class GerenciadorSentenca:
         self.momento_ultimo = float("-inf")
         self.palavras: list[str] = []
         self.frase_final = ""
+        self.glosa_final = ""
 
     # --- sinal atual (não confirmado) --------------------------------------
 
@@ -96,6 +102,7 @@ class GerenciadorSentenca:
         self.ultimo_confirmado = None
         self.momento_ultimo = float("-inf")
         self.frase_final = ""
+        self.glosa_final = ""
 
     # --- frase ----------------------------------------------------------------
 
@@ -103,7 +110,8 @@ class GerenciadorSentenca:
         """Encerra a frase em construção; devolve o texto (None se vazia)."""
         if not self.palavras:
             return None
-        self.frase_final = self.frase_atual
+        traducao = self.traducao_atual
+        self.frase_final, self.glosa_final = traducao.texto, traducao.glosa
         self.palavras.clear()
         if self.ao_finalizar:
             self.ao_finalizar(self.frase_final)
@@ -124,12 +132,22 @@ class GerenciadorSentenca:
         return [config.rotulo_exibicao(p) for p in self.palavras]
 
     @property
-    def frase_atual(self) -> str:
-        """A frase em construção: a sequência (após as regras), em ordem."""
+    def traducao_atual(self) -> Traducao:
+        """A frase em construção nas duas versões (após as regras e a tabela)."""
         palavras = list(self.palavras)
         for regra in self.regras:
             palavras = regra(palavras)
-        return " ".join(config.rotulo_exibicao(p) for p in palavras)
+        return (self.tabela or TabelaFrases()).traduzir(palavras)
+
+    @property
+    def frase_atual(self) -> str:
+        """A frase em construção: português onde houver frase cadastrada, glosa no resto."""
+        return self.traducao_atual.texto
+
+    @property
+    def glosa_atual(self) -> str:
+        """A frase em construção como sequência de sinais (após as regras)."""
+        return self.traducao_atual.glosa
 
     @staticmethod
     def texto_para_fala(frase: str) -> str:

@@ -93,8 +93,18 @@ Reproduzir voz, Remover última palavra e Limpar frase (atalhos: Espaço, Backsp
 Sem modelo treinado, a câmera funciona e mostra só os landmarks.
 
 Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece em "Frase
-final" e é falada em português do Brasil. A frase é a própria sequência de sinais (glosa,
-ex.: "EU NOME CAUA"): o MVP não traduz a gramática da Libras.
+final" e é falada em português do Brasil.
+
+**Tabela de frases (`frases.txt`).** Sequências cadastradas pelo grupo viram português:
+com `EU NOME = Meu nome é` e `OBRIGADO = Obrigado!`, os sinais EU · NOME · OBRIGADO
+aparecem como "Meu nome é obrigado!", com "Sinais: EU NOME OBRIGADO" em letra pequena
+embaixo. O que não estiver na tabela continua como glosa (a sequência de sinais, em
+maiúsculas): o sistema não traduz a gramática da Libras. Edite o `frases.txt` no Bloco de
+Notas (o formato está explicado no próprio arquivo) e confira com
+`python scripts/demonstracao/testar_frases.py` (menu → F), que aponta erros pelo número da
+linha e testa sequências sem abrir a câmera, ex.: `testar_frases.py EU NOME OBRIGADO`.
+**Revisem as frases com quem conhece Libras.** Para voltar ao modo só glosa:
+`USAR_TABELA_FRASES = False` no `config.py`.
 
 **Sem voz?** `python scripts/demonstracao/testar_voz.py` (ou menu → V) testa cada motor de
 voz do sistema, um por vez (no Windows: as vozes do sistema pelo PowerShell/System.Speech,
@@ -233,7 +243,8 @@ o roteiro do dia da apresentação em
 ## Limitações conhecidas
 
 - Vocabulário pequeno e fixo (10 sinais); sinais novos exigem gravar e treinar.
-- Não traduz a gramática da Libras: a frase é a sequência de sinais (glosa).
+- Não traduz a gramática da Libras: a frase é a sequência de sinais (glosa), e só as
+  sequências cadastradas no `frases.txt` viram português.
 - Não usa expressões faciais nem datilologia (soletração); nomes próprios não são reconhecidos.
 - Um sinal por vez: é preciso abaixar as mãos entre sinais iguais seguidos.
 - Precisa dos ombros visíveis (referência da normalização) e de boa iluminação.

@@ -91,12 +91,24 @@ function Juntar-Gravacoes {
     Rodar @("scripts/desenvolvimento/analisar_dataset.py", "--reconstruir-metadata") $AvisoAnalise
 }
 
+function Conferir-Frases {
+    Rodar @("scripts/demonstracao/testar_frases.py") "Corrija as linhas indicadas nos avisos acima."
+    Write-Host ""
+    Write-Host "   Para editar, abra o arquivo frases.txt da pasta do projeto no Bloco de Notas."
+    while ($true) {
+        $sinais = Read-Host "Teste uma sequência (ex.: EU NOME OBRIGADO), ou Enter para voltar"
+        if (-not "$sinais".Trim()) { break }
+        Rodar (@("scripts/demonstracao/testar_frases.py") + "$sinais".Trim().Split(" ", [StringSplitOptions]::RemoveEmptyEntries)) "Corrija as linhas indicadas nos avisos acima."
+    }
+}
+
 while ($true) {
     Clear-Host
     Titulo "Vis-oLibras - Libras para texto e voz"
     Write-Host "   APRESENTAÇÃO"
     Write-Host "     1  Abrir a aplicação"
     Write-Host "     V  Testar a voz"
+    Write-Host "     F  Conferir a tabela de frases (frases.txt)"
     if ($ModoDesenvolvimento) {
         Write-Host "     2  Testar a câmera"
         Write-Host ""
@@ -114,7 +126,7 @@ while ($true) {
     Write-Host ""
     Write-Host "     0  Sair"
     $opcao = "$(Read-Host "`nEscolha uma opção")".Trim()
-    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v") { $opcao = "invalida" }
+    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v", "f") { $opcao = "invalida" }
     if (-not $ModoDesenvolvimento -and $opcao -eq "2") { $opcao = "simples" }
     switch ($opcao) {
         "1" { Rodar @("scripts/demonstracao/app.py") }
@@ -131,6 +143,7 @@ while ($true) {
         }
         "simples" { Write-Host "Aperte Q na janela da câmera para voltar."; Rodar @("scripts/demonstracao/executar.py") }
         "v" { Rodar @("scripts/demonstracao/testar_voz.py") }
+        "f" { Conferir-Frases }
         "0" { exit 0 }
         default { Aviso "Opção inválida." }
     }

@@ -36,6 +36,9 @@ ARQ_CLASSES = DIR_MODELOS / "classes.json"  # rótulos na ordem das saídas do m
 ARQ_HAND_LANDMARKER = DIR_MODELOS / "hand_landmarker.task"
 ARQ_POSE_LANDMARKER = DIR_MODELOS / "pose_landmarker_lite.task"
 
+# Tabela de frases (sinais -> português), editável no Bloco de Notas.
+ARQ_FRASES = RAIZ_PROJETO / "frases.txt"
+
 DIR_REPORTS = RAIZ_PROJETO / "reports"
 DIR_TESTES = DIR_REPORTS / "testes"  # CSVs dos testes controlados (teste_controlado.py)
 
@@ -269,6 +272,12 @@ PAUSA_FRASE_S = 2.5        # segundos sem novas palavras para encerrar a frase
 FINALIZAR_POR_PAUSA = True # False: a frase só é encerrada pelo botão/tecla
 MAX_PALAVRAS = 8           # limite de palavras por frase
 JANELA_REPETICAO_S = 1.5   # mesma palavra de novo em menos que isso = repetição involuntária
+
+# Tabela de frases (frases.txt): converte sequências cadastradas pelo grupo em
+# português ("EU NOME" -> "Meu nome é"). O que não estiver na tabela continua
+# como glosa (a sequência de sinais). Ver src/libras/traducao.py.
+USAR_TABELA_FRASES = True  # False: volta ao modo só glosa
+MOSTRAR_GLOSA = True       # mostra a sequência de sinais em letra pequena, embaixo do português
 
 # =============================================================================
 # Teclas da aplicação em tempo real (além de Q/ESC para sair)

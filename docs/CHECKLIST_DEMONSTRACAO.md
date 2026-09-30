@@ -13,6 +13,7 @@
 - [ ] Posicionar a câmera: pessoa a ~1 m, ombros e mãos visíveis, luz de frente
 - [ ] Abrir `python scripts/demonstracao/app.py` → Câmera: OK · Modelo: carregado · Voz: pronta
 - [ ] Fazer 2 sinais de teste e finalizar uma frase (conferir o som)
+- [ ] Menu → F: a tabela de frases não mostra avisos (e foi revisada pelo grupo)
 - [ ] Limpar a frase antes de começar
 
 ## Durante

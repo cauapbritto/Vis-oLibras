@@ -1,7 +1,7 @@
 """Gera o pacote do MODO USUÁRIO: só o necessário para a demonstração (desenvolvimento).
 
 Inclui o núcleo e a aplicação (libras.MODULOS_NUCLEO + MODULOS_APLICACAO), os
-scripts de demonstração, o instalador de um clique do Windows (INSTALAR.bat,
+scripts de demonstração, a tabela de frases (frases.txt), o instalador de um clique do Windows (INSTALAR.bat,
 Vis-oLibras.bat e windows/), o requirements.txt e os modelos (classificador
 treinado e, se já baixados, os modelos do MediaPipe - útil em redes que
 bloqueiam o download). NÃO inclui dataset, relatórios, testes, scripts de
@@ -68,6 +68,8 @@ def arquivos_do_pacote(raiz: Path) -> list[Path]:
     arquivos = [Path("src/libras") / f"{m}.py" for m in modulos]
     arquivos += sorted(p.relative_to(raiz) for p in (raiz / "scripts/demonstracao").glob("*.py"))
     arquivos.append(Path("requirements.txt"))
+    if config.ARQ_FRASES.is_file():
+        arquivos.append(config.ARQ_FRASES.relative_to(raiz))
     arquivos += [Path("INSTALAR.bat"), Path("Vis-oLibras.bat")]
     arquivos += sorted(p.relative_to(raiz) for p in (raiz / "windows").glob("*.ps1"))
     for modelo in (config.ARQ_MODELO, config.ARQ_CLASSES, config.ARQ_MODELO_INFO,
