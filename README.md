@@ -1,6 +1,8 @@
-# Vis-oLibras
+# Librahin
 
 **Tradução de Libras para Texto e Voz utilizando Visão Computacional e Inteligência Artificial**
+
+*Antes chamado Vis-oLibras (o endereço do repositório no GitHub pode continuar com o nome antigo).*
 
 Protótipo acadêmico que usa a webcam para reconhecer, em tempo real, um vocabulário
 pequeno de sinais de Libras, montar a sequência de palavras e falar a frase.
@@ -45,8 +47,8 @@ verificado automaticamente pelos testes (`tests/test_modos.py`).
 **Windows, jeito fácil (um clique):** extraia o zip do projeto e dê dois cliques em
 **`INSTALAR.bat`**. Ele instala o Python 3.11 (pelo `winget`, se faltar), cria o `.venv`,
 instala as bibliotecas (com nova tentativa em redes que interceptam HTTPS), baixa os
-modelos do MediaPipe, confere a voz em português e cria o atalho **Vis-oLibras** na Área
-de Trabalho. O atalho (ou `Vis-oLibras.bat`) abre um menu numerado com a aplicação, o
+modelos do MediaPipe, confere a voz em português e cria o atalho **Librahin** na Área
+de Trabalho. O atalho (ou `Librahin.bat`) abre um menu numerado com a aplicação, o
 teste da câmera, a gravação, o envio/junção de gravações, a análise, o treino e o teste
 controlado. Se o Windows mostrar "O Windows protegeu o computador": **Mais informações** →
 **Executar assim mesmo**. Os scripts ficam em `windows/`; o log da instalação, em
@@ -137,14 +139,14 @@ Em `src/libras/config.py` ou pela linha de comando do `executar.py`:
 No computador de desenvolvimento (com o modelo treinado):
 
 ```bash
-python scripts/desenvolvimento/empacotar_app.py   # gera dist/Vis-oLibras-demo.zip
+python scripts/desenvolvimento/empacotar_app.py   # gera dist/Librahin-demo.zip
 ```
 
 O zip leva só o necessário (código da aplicação, `requirements.txt`, os modelos,
 inclusive os do MediaPipe — útil em redes que bloqueiam o download — e o instalador de um
 clique) e um `LEIA-ME.txt` com os comandos. No computador da apresentação: extrair, dois
 cliques em `INSTALAR.bat` (instala só o `requirements.txt`) e depois no atalho
-**Vis-oLibras** → opção 1.
+**Librahin** → opção 1.
 
 ---
 
@@ -280,7 +282,7 @@ models/                     modelos do MediaPipe e classificador treinado
 reports/                    métricas e gráficos (desenvolvimento)
 tests/                      testes automatizados
 docs/                       arquitetura e descrição dos sinais
-windows/                    instalador de um clique e menu (INSTALAR.bat, Vis-oLibras.bat)
+windows/                    instalador de um clique e menu (INSTALAR.bat, Librahin.bat)
 ```
 
 Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 2.
@@ -296,4 +298,4 @@ Trabalho acadêmico do curso de Tecnologia em Análise e Desenvolvimento de Sist
 
 **Professor orientador:** Éder Lemes
 
-Os créditos também aparecem no menu do Windows (`Vis-oLibras.bat` → **C**).
+Os créditos também aparecem no menu do Windows (`Librahin.bat` → **C**).

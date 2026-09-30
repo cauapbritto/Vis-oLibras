@@ -1,4 +1,4 @@
-# Tutorial — como testar e gravar sinais para o Vis-oLibras
+# Tutorial — como testar e gravar sinais para o Librahin
 
 Este guia é para quem vai **instalar o projeto, testar a câmera e gravar sinais** para
 treinar o modelo. Tempo total: cerca de **40 minutos** (10 a 15 de instalação, 25 de
@@ -38,7 +38,7 @@ Na pasta extraída, dê **dois cliques em `INSTALAR.bat`**.
 - Uma janela preta mostra 6 passos. Se não houver Python, ele instala o **Python 3.11**
   sozinho (o Windows pode pedir permissão: clique em **Sim**).
 - A instalação das bibliotecas demora alguns minutos. No fim aparece
-  **"Instalação concluída!"** e um atalho **Vis-oLibras** na Área de Trabalho.
+  **"Instalação concluída!"** e um atalho **Librahin** na Área de Trabalho.
 
 Pode rodar o `INSTALAR.bat` de novo quantas vezes precisar: ele aproveita o que já foi
 instalado. Se algo der errado, a mensagem em vermelho diz o que fazer, e os detalhes ficam
@@ -50,7 +50,7 @@ no arquivo `instalar.log` da pasta do projeto.
 
 ### A4. Abrir o menu
 
-Dê dois cliques no atalho **Vis-oLibras** da Área de Trabalho (ou em `Vis-oLibras.bat`,
+Dê dois cliques no atalho **Librahin** da Área de Trabalho (ou em `Librahin.bat`,
 na pasta do projeto). Aparece o menu:
 
 ```
@@ -181,8 +181,8 @@ e os **sinais confundidos** (matriz em `reports\matriz_confusao.png`).
   .venv\Scripts\python.exe scripts/desenvolvimento/empacotar_app.py
   ```
 
-  O arquivo fica em `dist\Vis-oLibras-demo.zip`. No computador da apresentação: extrair,
-  dois cliques em `INSTALAR.bat` e depois no atalho **Vis-oLibras** → opção 1.
+  O arquivo fica em `dist\Librahin-demo.zip`. No computador da apresentação: extrair,
+  dois cliques em `INSTALAR.bat` e depois no atalho **Librahin** → opção 1.
 
 ### B4. Resumo das métricas dos testes controlados
 

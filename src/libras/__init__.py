@@ -1,4 +1,4 @@
-"""Vis-oLibras: tradução de Libras para texto e voz.
+"""Librahin: tradução de Libras para texto e voz.
 
 Os módulos são organizados em três camadas (ver docs/ARQUITETURA.md, seção 2):
 

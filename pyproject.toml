@@ -10,7 +10,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vis-olibras"
+name = "librahin"
 version = "0.3.0"
 description = "Tradução de Libras para texto e voz com visão computacional e IA"
 requires-python = ">=3.10"

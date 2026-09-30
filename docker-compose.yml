@@ -13,7 +13,7 @@
 #   export LIBRAS_UID=$(id -u) LIBRAS_GID=$(id -g)
 x-base: &base
   build: .
-  image: vis-olibras
+  image: librahin
   user: "${LIBRAS_UID:-0}:${LIBRAS_GID:-0}"
   volumes:
     - ./data:/app/data

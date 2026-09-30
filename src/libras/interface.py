@@ -216,7 +216,7 @@ class Indicador(ctk.CTkFrame):
 class AplicacaoLibras(ctk.CTk):
     def __init__(self, indice_camera: int = config.INDICE_CAMERA) -> None:
         super().__init__()
-        self.title("Vis-oLibras")
+        self.title("Librahin")
         self._definir_icone(self)
         self._ajustar_tamanho()
         self.indice_camera = indice_camera
@@ -370,7 +370,7 @@ class AplicacaoLibras(ctk.CTk):
             self._pil_icone = icone_mao(64, "#ffffff", DESTAQUE)
         self._img_icone = ctk.CTkImage(light_image=self._pil_icone, dark_image=self._pil_icone, size=(24, 24))
         ctk.CTkLabel(topo, image=self._img_icone, text="").pack(side="left", padx=(20, 10))
-        ctk.CTkLabel(topo, text="Vis-oLibras", font=self._f_marca, text_color=TEXTO).pack(side="left")
+        ctk.CTkLabel(topo, text="Librahin", font=self._f_marca, text_color=TEXTO).pack(side="left")
         ctk.CTkLabel(topo, text="Libras para texto e voz", font=self._f_rotulo,
                      text_color=TEXTO_SECUNDARIO).pack(side="left", padx=(12, 0), pady=(2, 0))
         ctk.CTkButton(topo, text="Sobre", width=72, height=30, corner_radius=6, font=self._f_botao,
@@ -731,7 +731,7 @@ class AplicacaoLibras(ctk.CTk):
             return
         janela = ctk.CTkToplevel(self)
         self._janela_sobre = janela
-        janela.title("Sobre o Vis-oLibras")
+        janela.title("Sobre o Librahin")
         janela.configure(fg_color=SUPERFICIE)
         janela.resizable(False, False)
         janela.transient(self)
@@ -746,7 +746,7 @@ class AplicacaoLibras(ctk.CTk):
         ctk.CTkLabel(cabecalho, image=self._img_icone_sobre, text="").pack(side="left", padx=(0, 14))
         nome = ctk.CTkFrame(cabecalho, fg_color="transparent")
         nome.pack(side="left")
-        ctk.CTkLabel(nome, text="Vis-oLibras", font=_fonte(20, forte=True), text_color=TEXTO,
+        ctk.CTkLabel(nome, text="Librahin", font=_fonte(20, forte=True), text_color=TEXTO,
                      height=26, anchor="w").pack(anchor="w")
         ctk.CTkLabel(nome, text=f"Versão {libras.__version__}", font=self._f_pequeno,
                      text_color=TEXTO_SECUNDARIO, height=16, anchor="w").pack(anchor="w")
@@ -826,9 +826,9 @@ class AplicacaoLibras(ctk.CTk):
 
 def iniciar(indice_camera: int = config.INDICE_CAMERA, tema: str = "dark") -> None:
     if WINDOWS:
-        try:  # agrupa a janela com o ícone do Vis-oLibras na barra de tarefas (e não com o do Python)
+        try:  # agrupa a janela com o ícone do Librahin na barra de tarefas (e não com o do Python)
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("VisoLibras.Aplicacao")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Librahin.Aplicacao")
         except Exception:
             pass
     ctk.set_appearance_mode(tema)

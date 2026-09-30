@@ -51,7 +51,7 @@ def testar(nome: str, numero: int) -> bool:
     print("    falando agora... (escute)")
     inicio = time.time()
     try:
-        motor.falar_bloqueante(f"Teste de voz número {numero}. Olá, eu sou o Vis o Libras.")
+        motor.falar_bloqueante(f"Teste de voz número {numero}. Olá, eu sou o Librahin.")
     except Exception as erro:
         print(f"    erro ao falar: {erro}\n")
         return False

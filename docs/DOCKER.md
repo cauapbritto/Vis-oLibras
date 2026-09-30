@@ -1,4 +1,4 @@
-# Vis-oLibras em container (Docker)
+# Librahin em container (Docker)
 
 O container leva o Python, as bibliotecas e os modelos do MediaPipe já instalados:
 em qualquer máquina com Docker, é só montar a imagem e rodar, sem instalar Python nem
@@ -34,7 +34,7 @@ docker compose build
 
 > **Rede que intercepta HTTPS** (erro de certificado, como na faculdade): peça à TI o
 > certificado da rede (`.crt`) e monte assim:
-> `docker build --secret id=ca,src=certificado-da-rede.crt -t vis-olibras .`
+> `docker build --secret id=ca,src=certificado-da-rede.crt -t librahin .`
 
 ## 2. Treinar, analisar e testar (qualquer sistema)
 
@@ -75,8 +75,8 @@ Outra câmera: `LIBRAS_CAMERA=1 docker compose run --rm app` (e troque `/dev/vid
 ## 4. Levar a imagem pronta para outra máquina (sem internet)
 
 ```bash
-docker save vis-olibras | gzip > vis-olibras-imagem.tar.gz     # na máquina que montou
-docker load -i vis-olibras-imagem.tar.gz                        # na outra máquina
+docker save librahin | gzip > librahin-imagem.tar.gz     # na máquina que montou
+docker load -i librahin-imagem.tar.gz                        # na outra máquina
 ```
 
 O arquivo tem cerca de 400 MB. Depois, na outra máquina, os comandos `docker compose run`

@@ -1,4 +1,4 @@
-﻿# Menu do Vis-oLibras (chamado pelo Vis-oLibras.bat).
+﻿# Menu do Librahin (chamado pelo Librahin.bat).
 . (Join-Path $PSScriptRoot "comum.ps1")
 $Sinais = "OI", "EU", "MEU", "NOME", "BOM", "DIA", "OBRIGADO", "SIM", "NAO", "AJUDA"
 
@@ -62,7 +62,7 @@ function Empacotar-Gravacoes {
     if (-not $pessoa) { return }
     $arquivos = Get-ChildItem (Join-Path $Raiz "data/raw") -Recurse -Filter "${pessoa}_*.npy" -ErrorAction SilentlyContinue
     if (-not $arquivos) { Erro "Nenhuma gravação com o nome '$pessoa'."; return }
-    $temp = Join-Path ([IO.Path]::GetTempPath()) "vislibras_$pessoa"
+    $temp = Join-Path ([IO.Path]::GetTempPath()) "librahin_$pessoa"
     Remove-Item $temp -Recurse -Force -ErrorAction SilentlyContinue
     foreach ($a in $arquivos) {
         $destino = Join-Path $temp ("raw/" + $a.Directory.Name)
@@ -124,7 +124,7 @@ function Mostrar-Creditos {
 
 while ($true) {
     Clear-Host
-    Titulo "Vis-oLibras - Libras para texto e voz"
+    Titulo "Librahin - Libras para texto e voz"
     Write-Host "   APRESENTAÇÃO"
     Write-Host "     1  Abrir a aplicação"
     Write-Host "     V  Testar a voz"

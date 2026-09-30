@@ -1,4 +1,4 @@
-# Testes do Vis-oLibras
+# Testes do Librahin
 
 ## 1. Testes automáticos
 
@@ -85,7 +85,7 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 
 ### Interface
 - [ ] Ao abrir, a janela aparece logo com "Carregando" e o botão Iniciar câmera é liberado em poucos segundos
-- [ ] Ícone do Vis-oLibras (mão azul) na janela, na barra de tarefas e no atalho da Área de Trabalho
+- [ ] Ícone do Librahin (mão azul) na janela, na barra de tarefas e no atalho da Área de Trabalho
 - [ ] Iniciar câmera → imagem com landmarks; Parar câmera → volta a "Câmera desligada"
 - [ ] Sem câmera (ou com ela ocupada pelo Teams/Zoom), o painel explica o erro e a barra de baixo mostra "Câmera com erro"
 - [ ] O botão Sobre mostra a equipe, o orientador e o curso; Esc ou Fechar fecha

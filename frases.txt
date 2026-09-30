@@ -1,4 +1,4 @@
-# TABELA DE FRASES DO VIS-OLIBRAS
+# TABELA DE FRASES DO LIBRAHIN
 # ===============================
 # Converte sequências de sinais reconhecidos em português, para mostrar e falar.
 # O que não estiver aqui continua aparecendo como glosa (os sinais em MAIÚSCULAS).

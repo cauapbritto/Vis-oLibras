@@ -1,4 +1,4 @@
-﻿# Funções usadas pelo instalador e pelo menu do Vis-oLibras.
+﻿# Funções usadas pelo instalador e pelo menu do Librahin.
 $ErrorActionPreference = "Continue"
 $Raiz = Split-Path -Parent $PSScriptRoot
 Set-Location $Raiz

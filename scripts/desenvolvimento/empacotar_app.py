@@ -2,7 +2,7 @@
 
 Inclui o núcleo e a aplicação (libras.MODULOS_NUCLEO + MODULOS_APLICACAO), os
 scripts de demonstração, a tabela de frases (frases.txt), o instalador de um clique do Windows (INSTALAR.bat,
-Vis-oLibras.bat e windows/), o requirements.txt e os modelos (classificador
+Librahin.bat e windows/), o requirements.txt e os modelos (classificador
 treinado e, se já baixados, os modelos do MediaPipe - útil em redes que
 bloqueiam o download). NÃO inclui dataset, relatórios, testes, scripts de
 treino nem módulos de desenvolvimento.
@@ -27,8 +27,8 @@ import libras  # noqa: E402
 from libras import config  # noqa: E402
 from libras.classificador import ErroClassificador, carregar_classificador  # noqa: E402
 
-LEIA_ME = """VIS-OLIBRAS - PACOTE DE DEMONSTRAÇÃO
-=====================================
+LEIA_ME = """LIBRAHIN - PACOTE DE DEMONSTRAÇÃO
+=================================
 
 Requisitos: Python 3.10 a 3.12 (recomendado 3.11) e uma webcam.
 No Linux: sudo apt install python3-tk espeak-ng alsa-utils libegl1 libgles2
@@ -37,7 +37,7 @@ Windows, jeito fácil (precisa de internet só na instalação):
 
     1. Dois cliques em INSTALAR.bat (instala o Python, se faltar, e as bibliotecas).
        Se aparecer "O Windows protegeu o computador": Mais informações > Executar assim mesmo.
-    2. Dois cliques no atalho "Vis-oLibras" da Área de Trabalho > opção 1.
+    2. Dois cliques no atalho "Librahin" da Área de Trabalho > opção 1.
 
 Windows (PowerShell), passo a passo, dentro desta pasta:
 
@@ -71,7 +71,7 @@ def arquivos_do_pacote(raiz: Path) -> list[Path]:
     arquivos.append(Path("requirements.txt"))
     if config.ARQ_FRASES.is_file():
         arquivos.append(config.ARQ_FRASES.relative_to(raiz))
-    arquivos += [Path("INSTALAR.bat"), Path("Vis-oLibras.bat")]
+    arquivos += [Path("INSTALAR.bat"), Path("Librahin.bat")]
     arquivos += sorted(p.relative_to(raiz) for p in (raiz / "windows").glob("*.ps1"))
     for modelo in (config.ARQ_MODELO, config.ARQ_CLASSES, config.ARQ_MODELO_INFO,
                    config.ARQ_HAND_LANDMARKER, config.ARQ_POSE_LANDMARKER):
@@ -82,7 +82,7 @@ def arquivos_do_pacote(raiz: Path) -> list[Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--saida", type=Path, default=config.RAIZ_PROJETO / "dist" / "Vis-oLibras-demo.zip")
+    parser.add_argument("--saida", type=Path, default=config.RAIZ_PROJETO / "dist" / "Librahin-demo.zip")
     parser.add_argument("--sem-modelo", action="store_true",
                         help="empacota mesmo sem modelo treinado (a aplicação só mostrará os landmarks)")
     args = parser.parse_args()
@@ -107,7 +107,7 @@ def main() -> int:
         return 1
 
     args.saida.parent.mkdir(parents=True, exist_ok=True)
-    prefixo = Path("Vis-oLibras-demo")
+    prefixo = Path("Librahin-demo")
     with zipfile.ZipFile(args.saida, "w", zipfile.ZIP_DEFLATED) as pacote:
         for arquivo in arquivos:
             pacote.write(raiz / arquivo, (prefixo / arquivo).as_posix())

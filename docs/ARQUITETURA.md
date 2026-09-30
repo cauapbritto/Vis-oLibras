@@ -110,7 +110,7 @@ O projeto tem **dois modos claramente separados**:
 | Módulos | núcleo + aplicação | todos |
 
 ```
-Vis-oLibras/
+Librahin/
 ├── README.md
 ├── requirements.txt             # MODO USUÁRIO: só o que a aplicação precisa
 ├── requirements-dev.txt         # MODO DESENVOLVIMENTO: -r requirements.txt + treino/testes
@@ -162,7 +162,7 @@ Vis-oLibras/
 │       ├── comparar_features.py # features v1 (posição) × v2 (+ movimento)
 │       ├── teste_controlado.py  # participantes fazem cada sinal N vezes; grava CSV
 │       ├── resumir_testes.py    # métricas dos testes controlados (txt, json, csv, png)
-│       ├── empacotar_app.py     # gera o zip do modo usuário (dist/Vis-oLibras-demo.zip)
+│       ├── empacotar_app.py     # gera o zip do modo usuário (dist/Librahin-demo.zip)
 │       ├── gerar_icone.py       # desenha o ícone do aplicativo (src/libras/recursos)
 │       └── visualizar_amostra.py# (a implementar) reproduz uma amostra gravada
 │

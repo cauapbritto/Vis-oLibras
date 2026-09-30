@@ -1,11 +1,11 @@
-# Vis-oLibras em container.
+# Librahin em container.
 #
 # - Treino, análise do dataset e testes: funcionam em qualquer sistema com Docker.
 # - Câmera, janela e som (coleta e interface): só no Linux (ver docs/DOCKER.md).
 #
 # Montar a imagem:   docker compose build
 # Rede corporativa que intercepta HTTPS (erro de certificado)? Passe o certificado:
-#   docker build --secret id=ca,src=certificado-da-rede.crt -t vis-olibras .
+#   docker build --secret id=ca,src=certificado-da-rede.crt -t librahin .
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \

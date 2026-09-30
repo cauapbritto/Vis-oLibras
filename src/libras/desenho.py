@@ -97,7 +97,7 @@ def _capsula(desenho, p1, p2, raio: float, cor) -> None:
 
 
 def icone_mao(tamanho: int, cor_mao="#ffffff", cor_fundo=None):
-    """Ícone do Vis-oLibras: mão aberta estilizada, como imagem RGBA do Pillow.
+    """Ícone do Librahin: mão aberta estilizada, como imagem RGBA do Pillow.
     Com `cor_fundo`, a mão fica dentro de um quadrado de cantos arredondados.
     Desenhado 4x maior e reduzido, para as bordas ficarem suaves."""
     from PIL import Image, ImageDraw

@@ -1,4 +1,4 @@
-"""Configuração central do projeto Vis-oLibras.
+"""Configuração central do projeto Librahin.
 
 TODAS as constantes do sistema ficam aqui: nenhum "número mágico" deve aparecer
 espalhado pelos outros módulos. Os caminhos são calculados a partir da pasta
@@ -136,7 +136,7 @@ TROCAR_LADOS = False
 # Interface
 # =============================================================================
 
-NOME_JANELA = "Vis-oLibras"
+NOME_JANELA = "Librahin"
 TECLAS_SAIR = ("q", "Q", "\x1b")  # Q ou ESC
 JANELA_FPS = 30                    # nº de frames usados na média do FPS
 SEGUNDOS_SEM_MAO_DICA = 3.0        # tempo sem mãos até mostrar dicas na tela

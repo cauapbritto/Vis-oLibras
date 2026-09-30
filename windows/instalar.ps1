@@ -1,4 +1,4 @@
-﻿# Instalador de um clique do Vis-oLibras (chamado pelo INSTALAR.bat).
+﻿# Instalador de um clique do Librahin (chamado pelo INSTALAR.bat).
 # Pode ser executado de novo quantas vezes quiser: o que já existe é aproveitado.
 . (Join-Path $PSScriptRoot "comum.ps1")
 $Log = Join-Path $Raiz "instalar.log"
@@ -35,7 +35,7 @@ function Executar-Python([string[]]$comando, [string[]]$argumentos) {
     return $LASTEXITCODE
 }
 
-Titulo "Vis-oLibras - Instalação"
+Titulo "Librahin - Instalação"
 Write-Host "   Pasta: $Raiz"
 
 # 1. Python ------------------------------------------------------------------
@@ -137,21 +137,30 @@ Titulo "[6/6] Atalho"
 if ($NoWindows) {
     try {
         $area = [Environment]::GetFolderPath("Desktop")
-        $atalho = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $area "Vis-oLibras.lnk"))
-        $atalho.TargetPath = Join-Path $Raiz "Vis-oLibras.bat"
+        $atalho = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $area "Librahin.lnk"))
+        $atalho.TargetPath = Join-Path $Raiz "Librahin.bat"
         $atalho.WorkingDirectory = $Raiz
-        $atalho.Description = "Vis-oLibras - Libras para texto e voz"
+        $atalho.Description = "Librahin - Libras para texto e voz"
         $icone = Join-Path $Raiz "src\libras\recursos\icone.ico"
         if (Test-Path $icone) { $atalho.IconLocation = "$icone,0" }
         $atalho.Save()
-        Ok "Atalho 'Vis-oLibras' criado na Área de Trabalho"
+        Ok "Atalho 'Librahin' criado na Área de Trabalho"
+        # O projeto se chamava Vis-oLibras: apaga o atalho antigo, só se foi este instalador que o criou
+        $antigo = Join-Path $area "Vis-oLibras.lnk"
+        if (Test-Path $antigo) {
+            $alvo = (New-Object -ComObject WScript.Shell).CreateShortcut($antigo).TargetPath
+            if ($alvo -like "*\Vis-oLibras.bat") {
+                Remove-Item $antigo -Force
+                Ok "Atalho antigo 'Vis-oLibras' removido (o projeto agora se chama Librahin)"
+            }
+        }
     } catch {
-        Aviso "Não foi possível criar o atalho. Use o arquivo Vis-oLibras.bat da pasta do projeto."
+        Aviso "Não foi possível criar o atalho. Use o arquivo Librahin.bat da pasta do projeto."
     }
 } else {
     Aviso "Fora do Windows: rode ./windows/menu.ps1 com o pwsh, ou use os comandos do README."
 }
 
 Titulo "Instalação concluída!"
-Write-Host "   Abra o 'Vis-oLibras' (atalho na Área de Trabalho ou Vis-oLibras.bat)."
+Write-Host "   Abra o 'Librahin' (atalho na Área de Trabalho ou Librahin.bat)."
 Encerrar 0
