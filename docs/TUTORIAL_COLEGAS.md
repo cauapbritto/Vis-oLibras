@@ -69,6 +69,7 @@ na pasta do projeto). Aparece o menu:
      8  Treinar o modelo
      9  Teste controlado (métricas do trabalho)
 
+     C  Créditos
      0  Sair
 ```
 

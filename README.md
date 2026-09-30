@@ -280,3 +280,16 @@ windows/                    instalador de um clique e menu (INSTALAR.bat, Vis-oL
 ```
 
 Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 2.
+
+## Equipe
+
+Trabalho acadêmico do curso de Tecnologia em Análise e Desenvolvimento de Sistemas.
+
+- Cauã Pedrozo Brito
+- Adryel da Assunção Rocha
+- Alber Alberguini Cabral
+- João Francisco da Silva Malaquias
+
+**Professor orientador:** Éder Lemes
+
+Os créditos também aparecem no menu do Windows (`Vis-oLibras.bat` → **C**).

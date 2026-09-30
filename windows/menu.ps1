@@ -102,6 +102,26 @@ function Conferir-Frases {
     }
 }
 
+function Mostrar-Creditos {
+    Clear-Host
+    Titulo "Créditos"
+    Write-Host ""
+    Write-Host "   Tradução de Libras para Texto e Voz utilizando" -ForegroundColor White
+    Write-Host "   Visão Computacional e Inteligência Artificial" -ForegroundColor White
+    Write-Host ""
+    Write-Host "   EQUIPE" -ForegroundColor Cyan
+    Write-Host "     Cauã Pedrozo Brito"
+    Write-Host "     Adryel da Assunção Rocha"
+    Write-Host "     Alber Alberguini Cabral"
+    Write-Host "     João Francisco da Silva Malaquias"
+    Write-Host ""
+    Write-Host "   PROFESSOR ORIENTADOR" -ForegroundColor Cyan
+    Write-Host "     Éder Lemes"
+    Write-Host ""
+    Write-Host "   Curso de Tecnologia em Análise e Desenvolvimento de Sistemas" -ForegroundColor DarkGray
+    Write-Host "   Feito com Python, OpenCV, MediaPipe, scikit-learn e CustomTkinter" -ForegroundColor DarkGray
+}
+
 while ($true) {
     Clear-Host
     Titulo "Vis-oLibras - Libras para texto e voz"
@@ -124,9 +144,10 @@ while ($true) {
         Write-Host "     2  Versão simples (janela do OpenCV)"
     }
     Write-Host ""
+    Write-Host "     C  Créditos"
     Write-Host "     0  Sair"
     $opcao = "$(Read-Host "`nEscolha uma opção")".Trim()
-    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v", "f") { $opcao = "invalida" }
+    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v", "f", "c") { $opcao = "invalida" }
     if (-not $ModoDesenvolvimento -and $opcao -eq "2") { $opcao = "simples" }
     switch ($opcao) {
         "1" { Rodar @("scripts/demonstracao/app.py") }
@@ -144,6 +165,7 @@ while ($true) {
         "simples" { Write-Host "Aperte Q na janela da câmera para voltar."; Rodar @("scripts/demonstracao/executar.py") }
         "v" { Rodar @("scripts/demonstracao/testar_voz.py") }
         "f" { Conferir-Frases }
+        "c" { Mostrar-Creditos }
         "0" { exit 0 }
         default { Aviso "Opção inválida." }
     }
