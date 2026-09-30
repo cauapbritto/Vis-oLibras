@@ -118,6 +118,19 @@ def test_construir_salvar_e_carregar_dados_treino(dataset_vazio):
     assert set(carregados.pessoas) == {"ana", "bia"}
 
 
+def test_gravacao_nova_depois_do_treino_reconstroi_o_dataset(dataset_vazio):
+    """Gravou letras, treinou, gravou SIM: o próximo treino precisa ver o SIM."""
+    import os
+    _popular(4)
+    dataset.salvar_dados_treino(dataset.construir_dados_treino()[0])
+    antigo = config.ARQ_DATASET.stat().st_mtime - 60
+    for caminho in [config.DIR_RAW, *config.DIR_RAW.iterdir(), *config.DIR_RAW.glob("*/*.npy")]:
+        os.utime(caminho, (antigo, antigo))
+    assert not dataset.precisa_reconstruir()
+    dataset.salvar_amostra(amostra((0.5, 0.60), (0.8, 0.60), ruido=0.01, semente=999), "NAO", "ana")
+    assert dataset.precisa_reconstruir()
+
+
 def test_dados_treino_de_outra_versao_sao_recusados(dataset_vazio, monkeypatch):
     _popular(4)
     dataset.salvar_dados_treino(dataset.construir_dados_treino()[0])

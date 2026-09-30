@@ -450,9 +450,22 @@ def salvar_dados_treino(dados: DadosTreino) -> None:
     )
 
 
+def _ultima_mudanca_gravacoes() -> float:
+    """Momento da última gravação adicionada ou removida em data/raw. Usa também a data
+    das pastas: gravações juntadas de um .zip mantêm a data antiga do arquivo, mas a
+    pasta muda quando ganha ou perde um arquivo."""
+    if not config.DIR_RAW.is_dir():
+        return 0.0
+    caminhos = [config.DIR_RAW, *config.DIR_RAW.iterdir(), *config.DIR_RAW.glob("*/*.npy")]
+    return max(c.stat().st_mtime for c in caminhos)
+
+
 def precisa_reconstruir() -> bool:
-    """dataset.npz ausente ou gerado com outra versão de features / T_FRAMES?"""
+    """dataset.npz ausente, gerado com outra versão de features / T_FRAMES ou mais antigo
+    que as gravações (sinal gravado depois do último treino)?"""
     if not config.ARQ_DATASET.is_file():
+        return True
+    if _ultima_mudanca_gravacoes() > config.ARQ_DATASET.stat().st_mtime:
         return True
     try:
         with np.load(config.ARQ_DATASET, allow_pickle=False) as arquivo:
