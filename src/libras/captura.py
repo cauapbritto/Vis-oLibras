@@ -77,6 +77,9 @@ class ProcessadorCamera(threading.Thread):
         try:
             self._eventos.put(("status", "Abrindo a câmera..."))
             camera.abrir()
+            if camera.imagem_suspeita:
+                self._eventos.put(("aviso", "A imagem da câmera parece com defeito (listras). Escolha outra "
+                                            "câmera na lista ou outro modo em Configurações > Câmera."))
             self._eventos.put(("status", "Carregando o MediaPipe..."))
             pipeline = PipelineVisao(self.classificador, self.estabilizador)
             self.pipeline = pipeline

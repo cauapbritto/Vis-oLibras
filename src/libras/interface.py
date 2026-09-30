@@ -273,6 +273,16 @@ class JanelaConfiguracoes:
         leve.set(next(r for r, valor in opcoes.items() if valor == v["modo_leve"]))
         leve.pack(anchor="w")
 
+        _titulo_secao(corpo, "Câmera", f_secao)
+        ctk.CTkLabel(corpo, text="Modo da câmera (troque se a imagem vier com listras ou não abrir)",
+                     font=f_texto, text_color=TEXTO, anchor="w").pack(fill="x", pady=(0, 4))
+        modos = {"Automático": "auto", "DirectShow": "dshow", "Media Foundation": "msmf"}
+        modo = ctk.CTkSegmentedButton(corpo, values=list(modos), font=f_peq, selected_color=DESTAQUE,
+                                      selected_hover_color=DESTAQUE_HOVER,
+                                      command=lambda rotulo: app._aplicar_preferencia("modo_camera", modos[rotulo]))
+        modo.set(next((r for r, valor in modos.items() if valor == v["modo_camera"]), "Automático"))
+        modo.pack(anchor="w")
+
         _titulo_secao(corpo, "Frase", f_secao)
         self._chave(corpo, "Encerrar a frase sozinho depois de uma pausa", "finalizar_por_pausa",
                     v["finalizar_por_pausa"])
@@ -903,6 +913,8 @@ class AplicacaoLibras(ctk.CTk):
                 self.voz.falar(self.sentenca.texto_para_fala(config.rotulo_exibicao(palavra)))
         elif tipo == "erro":
             self.erro_camera = dado
+        elif tipo == "aviso":
+            self._mostrar_aviso(dado, duracao_ms=12000)
         elif tipo == "parado":
             self.processador = None
             self.estado_camera = "desligada"
@@ -956,9 +968,14 @@ class AplicacaoLibras(ctk.CTk):
         self.cameras = cameras
         if cameras and self.indice_camera not in cameras and self.processador is None:
             self.indice_camera = cameras[0]   # a escolhida antes não está conectada agora
-        nomes = [self._nome_camera(i) for i in cameras] or ["Nenhuma câmera"]
+        if cameras:
+            nomes = [self._nome_camera(i) for i in cameras]
+        else:   # nenhuma respondeu na procura: deixa escolher na mão (às vezes ela funciona ao ligar)
+            nomes = [self._nome_camera(i) for i in range(config.MAX_CAMERAS_PROCURAR)]
+            self._mostrar_aviso("Nenhuma câmera respondeu na procura. Tente Iniciar câmera ou escolha "
+                                "outra na lista.", duracao_ms=10000)
         self.menu_camera.configure(values=nomes + [self.PROCURAR])
-        self.menu_camera.set(self._nome_camera(self.indice_camera) if cameras else "Nenhuma câmera")
+        self.menu_camera.set(self._nome_camera(self.indice_camera))
 
     def _escolher_camera(self, escolha: str) -> None:
         if escolha == self.PROCURAR:
@@ -1038,6 +1055,9 @@ class AplicacaoLibras(ctk.CTk):
         elif nome == "falar_cada_palavra":
             self.var_cada_palavra.set(valor)
             self._alternar_cada_palavra()
+        elif nome == "modo_camera" and self.processador is not None:
+            self._religar_camera = True   # religa a câmera no modo novo
+            self._parar_camera()
 
     def _abrir_historico(self) -> None:
         if self._janela_historico is not None and self._janela_historico.janela.winfo_exists():

@@ -25,6 +25,60 @@ class ErroCamera(RuntimeError):
     """A webcam não pôde ser aberta ou parou de enviar imagens."""
 
 
+# Modos de abrir a câmera. "auto" tenta, no Windows: DirectShow pedindo MJPG (rápido e
+# com cores certas na maioria das webcams), Media Foundation e DirectShow simples, e
+# fica com o primeiro que entrega uma imagem sem defeito.
+MODOS_CAMERA = ("auto", "dshow", "msmf", "padrao")
+
+
+def _candidatos(modo: str) -> list[str]:
+    if modo == "dshow":
+        return ["dshow_mjpg", "dshow"]
+    if modo in ("msmf", "padrao"):
+        return [modo]
+    return ["dshow_mjpg", "msmf", "dshow"] if platform.system() == "Windows" else ["padrao"]
+
+
+def _abrir_modo(indice: int, modo: str, largura: int, altura: int):
+    """VideoCapture aberto no modo pedido, ou None se não abriu."""
+    if modo.startswith("dshow"):
+        captura = cv2.VideoCapture(indice, cv2.CAP_DSHOW)
+    elif modo == "msmf":
+        captura = cv2.VideoCapture(indice, cv2.CAP_MSMF)
+    else:
+        captura = cv2.VideoCapture(indice)
+    if not captura.isOpened():
+        captura.release()
+        return None
+    if modo == "dshow_mjpg":
+        captura.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+    captura.set(cv2.CAP_PROP_FRAME_WIDTH, largura)
+    captura.set(cv2.CAP_PROP_FRAME_HEIGHT, altura)
+    return captura
+
+
+def _primeiro_quadro(captura, tentativas: int = 10) -> np.ndarray | None:
+    """Algumas câmeras demoram alguns quadros para "acordar": tenta algumas vezes."""
+    for _ in range(tentativas):
+        ok, frame = captura.read()
+        if ok and frame is not None:
+            return frame
+        time.sleep(0.05)
+    return None
+
+
+def imagem_corrompida(frame: np.ndarray) -> bool:
+    """True para a imagem "listrada" (listras verticais roxas e verdes) que aparece
+    quando o formato de cor da câmera é lido errado: vizinhos na horizontal mudam
+    muito mais que vizinhos na vertical, o que não acontece numa imagem real."""
+    if frame is None or frame.ndim < 2 or frame.shape[0] < 8 or frame.shape[1] < 8:
+        return False
+    cinza = frame.astype(np.float32).mean(axis=2) if frame.ndim == 3 else frame.astype(np.float32)
+    horizontal = float(np.abs(np.diff(cinza[::4, :], axis=1)).mean())
+    vertical = float(np.abs(np.diff(cinza[:, ::4], axis=0)).mean())
+    return horizontal > 20 and horizontal > 4 * max(vertical, 1.0)
+
+
 class Camera:
     """Webcam com tratamento de erros.
 
@@ -40,8 +94,12 @@ class Camera:
         altura: int = config.ALTURA_CAMERA,
         espelhar: bool = config.ESPELHAR_IMAGEM,
         max_falhas: int = config.MAX_FALHAS_LEITURA,
+        modo: str | None = None,
     ) -> None:
         self.indice = indice
+        self.modo = config.MODO_CAMERA if modo is None else modo   # lido agora: muda nas Configurações
+        self.modo_usado: str | None = None      # o modo que funcionou (para diagnóstico)
+        self.imagem_suspeita = False            # nenhum modo deu imagem sem defeito
         self.largura = largura
         self.altura = altura
         self.espelhar = espelhar
@@ -49,38 +107,43 @@ class Camera:
         self._captura: cv2.VideoCapture | None = None
         self._falhas_seguidas = 0
 
-    def _abrir_captura(self) -> cv2.VideoCapture:
-        """No Windows, o DirectShow abre a webcam bem mais rápido que o backend
-        padrão (MSMF, que pode levar vários segundos); se falhar, usa o padrão."""
-        if platform.system() == "Windows":
-            captura = cv2.VideoCapture(self.indice, cv2.CAP_DSHOW)
-            if captura.isOpened():
-                return captura
-            captura.release()
-        return cv2.VideoCapture(self.indice)
-
     def abrir(self) -> None:
-        captura = self._abrir_captura()
-        if not captura.isOpened():
-            captura.release()
+        """Abre a câmera tentando os modos de _candidatos() até ter uma imagem boa."""
+        abriu = False
+        reserva = None   # primeiro modo que mandou imagem, mesmo com defeito
+        for modo in _candidatos(self.modo):
+            captura = _abrir_modo(self.indice, modo, self.largura, self.altura)
+            if captura is None:
+                continue
+            abriu = True
+            frame = _primeiro_quadro(captura)
+            if frame is not None and not imagem_corrompida(frame):
+                self._usar(captura, modo, suspeita=False)
+                return
+            captura.release()   # o Windows não deixa abrir a mesma câmera em dois modos ao mesmo tempo
+            if frame is not None and reserva is None:
+                reserva = modo
+        if reserva is not None:   # só imagens com defeito: usa a primeira e avisa
+            captura = _abrir_modo(self.indice, reserva, self.largura, self.altura)
+            if captura is not None and _primeiro_quadro(captura) is not None:
+                self._usar(captura, reserva, suspeita=True)
+                return
+        if not abriu:
             raise ErroCamera(
-                f"Não foi possível abrir a câmera {self.indice}. Verifique se ela está "
+                f"Não foi possível abrir a câmera {self.indice + 1}. Verifique se ela está "
                 "conectada, se outro programa (Zoom, Teams, navegador) não a está "
-                "usando e se o sistema deu permissão de acesso à câmera. "
-                "Para usar outra câmera: --camera 1 ou LIBRAS_CAMERA=1."
+                "usando e se o sistema deu permissão de acesso à câmera. Se houver mais "
+                "de uma câmera, escolha outra na lista ao lado do botão (ou --camera 1)."
             )
-        captura.set(cv2.CAP_PROP_FRAME_WIDTH, self.largura)
-        captura.set(cv2.CAP_PROP_FRAME_HEIGHT, self.altura)
+        raise ErroCamera(
+            f"A câmera {self.indice + 1} foi aberta, mas não enviou nenhuma imagem. "
+            "Escolha outra câmera na lista ou reconecte o dispositivo."
+        )
 
-        # Algumas câmeras "abrem" mas não entregam imagem; testamos um frame.
-        ok, _ = captura.read()
-        if not ok:
-            captura.release()
-            raise ErroCamera(
-                f"A câmera {self.indice} foi aberta, mas não enviou nenhuma imagem. "
-                "Tente outro índice de câmera ou reconecte o dispositivo."
-            )
+    def _usar(self, captura, modo: str, suspeita: bool) -> None:
         self._captura = captura
+        self.modo_usado = modo
+        self.imagem_suspeita = suspeita
         self._falhas_seguidas = 0
 
     def ler(self) -> np.ndarray | None:
@@ -127,18 +190,21 @@ class Camera:
 
 
 def listar_cameras(maximo: int = config.MAX_CAMERAS_PROCURAR) -> list[int]:
-    """Índices das câmeras que abrem e entregam imagem (0, 1, ...). Não chame com a
-    câmera em uso por este programa. No Windows testa só o DirectShow, que responde
-    rápido quando o índice não existe."""
+    """Índices das câmeras que abrem e entregam alguma imagem (0, 1, ...). Não chame
+    com a câmera em uso por este programa. No Windows, tenta primeiro o DirectShow,
+    que responde rápido quando o índice não existe; se ele abrir mas não mandar
+    imagem, tenta o Media Foundation."""
+    modos = ["dshow", "msmf"] if platform.system() == "Windows" else ["padrao"]
     encontradas = []
     for indice in range(maximo):
-        if platform.system() == "Windows":
-            captura = cv2.VideoCapture(indice, cv2.CAP_DSHOW)
-        else:
-            captura = cv2.VideoCapture(indice)
-        try:
-            if captura.isOpened() and captura.read()[0]:
-                encontradas.append(indice)
-        finally:
-            captura.release()
+        for modo in modos:
+            captura = _abrir_modo(indice, modo, config.LARGURA_CAMERA, config.ALTURA_CAMERA)
+            if captura is None:
+                break   # nem abriu: não existe câmera nesse índice
+            try:
+                if _primeiro_quadro(captura) is not None:
+                    encontradas.append(indice)
+                    break
+            finally:
+                captura.release()
     return encontradas

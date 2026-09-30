@@ -141,7 +141,10 @@ então cada fala começa na hora. Além disso:
 com as câmeras encontradas quando a aplicação abre. Escolher outra com a câmera ligada
 desliga e religa na nova; a escolha fica salva neste computador e vale também para gravar
 sinais e testar a câmera pelo menu. "Procurar câmeras" procura de novo (com a câmera
-desligada), por exemplo depois de conectar uma webcam USB.
+desligada), por exemplo depois de conectar uma webcam USB. Ao ligar, a câmera é aberta
+em modos diferentes até dar uma imagem boa: imagem "listrada" (roxa e verde, formato de cor
+lido errado) é descartada. Se nenhum modo der certo, aparece um aviso; dá para escolher o
+modo em Configurações → Câmera (`MODO_CAMERA`).
 
 **Janelas da barra superior.**
 

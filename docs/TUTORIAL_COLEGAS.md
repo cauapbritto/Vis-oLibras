@@ -242,6 +242,7 @@ Os resultados (accuracy, precision, recall, F1, tempos, matriz de confusão) fic
 | "Este Python veio sem o tkinter" | Siga a mensagem: instalador do Python → Modify → marque *tcl/tk and IDLE*; apague a pasta `.venv` e rode o `INSTALAR.bat` |
 | Erro nas bibliotecas / `CERTIFICATE_VERIFY_FAILED` | A rede (faculdade/empresa) está bloqueando: conecte em outra rede (roteador do celular) e rode o `INSTALAR.bat` de novo |
 | Câmera não abre | Feche Teams/Zoom/navegador; se tiver mais de uma câmera, escolha outra na lista ao lado do botão da câmera |
+| Imagem com listras roxas e verdes | Configurações → Câmera → troque o modo (DirectShow ou Media Foundation); ou escolha outra câmera na lista (a câmera infravermelha do Windows Hello dá essa imagem) |
 | Tudo "Descartada" | Afaste-se (ombros visíveis) e melhore a luz |
 | Tecla Q não responde | Clique uma vez na janela da câmera e aperte Q de novo |
 | Voz em inglês | Configurações → Hora e idioma → Idioma e região → Português (Brasil) → Opções → instalar a **Fala** (conversão de texto em fala) |
