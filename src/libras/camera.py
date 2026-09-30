@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import platform
 import time
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
@@ -28,15 +29,17 @@ class ErroCamera(RuntimeError):
 # Modos de abrir a câmera. "auto" tenta, no Windows: DirectShow pedindo MJPG (rápido e
 # com cores certas na maioria das webcams), Media Foundation e DirectShow simples, e
 # fica com o primeiro que entrega uma imagem sem defeito.
-MODOS_CAMERA = ("auto", "dshow", "msmf", "padrao")
+MODOS_CAMERA = ("auto", "dshow_mjpg", "dshow", "msmf", "padrao")
+NOMES_MODOS = {"dshow_mjpg": "DirectShow MJPG", "dshow": "DirectShow", "msmf": "Media Foundation",
+               "padrao": "Padrão do OpenCV"}
+
+
+def modos_do_sistema() -> list[str]:
+    return ["dshow_mjpg", "msmf", "dshow"] if platform.system() == "Windows" else ["padrao"]
 
 
 def _candidatos(modo: str) -> list[str]:
-    if modo == "dshow":
-        return ["dshow_mjpg", "dshow"]
-    if modo in ("msmf", "padrao"):
-        return [modo]
-    return ["dshow_mjpg", "msmf", "dshow"] if platform.system() == "Windows" else ["padrao"]
+    return modos_do_sistema() if modo == "auto" else [modo]
 
 
 def _abrir_modo(indice: int, modo: str, largura: int, altura: int):
@@ -67,16 +70,28 @@ def _primeiro_quadro(captura, tentativas: int = 10) -> np.ndarray | None:
     return None
 
 
-def imagem_corrompida(frame: np.ndarray) -> bool:
-    """True para a imagem "listrada" (listras verticais roxas e verdes) que aparece
-    quando o formato de cor da câmera é lido errado: vizinhos na horizontal mudam
-    muito mais que vizinhos na vertical, o que não acontece numa imagem real."""
+def defeito_imagem(frame: np.ndarray) -> str | None:
+    """Por que a imagem parece lida no formato errado ("listras" ou "ruído"), ou None.
+
+    - listras: vizinhos na horizontal mudam muito mais que na vertical (formato de
+      cor trocado: listras verticais roxas e verdes);
+    - ruído: vizinhos quase não se parecem (numa imagem real, pixels vizinhos são
+      parecidos; num quadro decodificado errado, parecem sorteados)."""
     if frame is None or frame.ndim < 2 or frame.shape[0] < 8 or frame.shape[1] < 8:
-        return False
+        return None
     cinza = frame.astype(np.float32).mean(axis=2) if frame.ndim == 3 else frame.astype(np.float32)
     horizontal = float(np.abs(np.diff(cinza[::4, :], axis=1)).mean())
     vertical = float(np.abs(np.diff(cinza[:, ::4], axis=0)).mean())
-    return horizontal > 20 and horizontal > 4 * max(vertical, 1.0)
+    if horizontal > 20 and horizontal > 4 * max(vertical, 1.0):
+        return "listras"
+    desvio = float(cinza.std())
+    if desvio > 12 and (horizontal + vertical) / 2 > 0.6 * desvio:
+        return "ruído"
+    return None
+
+
+def imagem_corrompida(frame: np.ndarray) -> bool:
+    return defeito_imagem(frame) is not None
 
 
 class Camera:
@@ -208,3 +223,65 @@ def listar_cameras(maximo: int = config.MAX_CAMERAS_PROCURAR) -> list[int]:
             finally:
                 captura.release()
     return encontradas
+
+
+@dataclass
+class TesteCamera:
+    indice: int
+    modo: str
+    abriu: bool = False
+    frame: np.ndarray | None = None
+    fps: float = 0.0
+    defeito: str | None = None
+
+    @property
+    def bom(self) -> bool:
+        return self.frame is not None and self.defeito is None
+
+    @property
+    def descricao(self) -> str:
+        if not self.abriu:
+            return "não abriu"
+        if self.frame is None:
+            return "abriu, sem imagem"
+        altura, largura = self.frame.shape[:2]
+        estado = "imagem boa" if self.defeito is None else f"com defeito ({self.defeito})"
+        return f"{largura}x{altura}, {self.fps:.0f} fps, {estado}"
+
+
+def diagnosticar(maximo: int = config.MAX_CAMERAS_PROCURAR, quadros: int = 15) -> list[TesteCamera]:
+    """Testa cada câmera em cada modo e mede a imagem e o FPS (para escolher a melhor
+    combinação quando o automático erra). Índices que nem abrem no primeiro modo são pulados."""
+    resultados = []
+    for indice in range(maximo):
+        for n, modo in enumerate(modos_do_sistema()):
+            teste = TesteCamera(indice, modo)
+            captura = _abrir_modo(indice, modo, config.LARGURA_CAMERA, config.ALTURA_CAMERA)
+            if captura is None:
+                resultados.append(teste)
+                if n == 0:
+                    break   # nem abre: não existe câmera nesse índice
+                continue
+            teste.abriu = True
+            try:
+                frame = _primeiro_quadro(captura)
+                if frame is not None:
+                    inicio, lidos = time.perf_counter(), 0
+                    for _ in range(quadros):
+                        ok, novo = captura.read()
+                        if ok and novo is not None:
+                            frame, lidos = novo, lidos + 1
+                    duracao = time.perf_counter() - inicio
+                    teste.fps = lidos / duracao if duracao > 0 else 0.0
+                    teste.frame = frame
+                    teste.defeito = defeito_imagem(frame)
+            finally:
+                captura.release()
+            resultados.append(teste)
+    return resultados
+
+
+def melhor_combinacao(resultados: list[TesteCamera]) -> TesteCamera | None:
+    """A combinação com imagem boa e o maior FPS (ou None se nenhuma deu imagem boa)."""
+    boas = [r for r in resultados if r.bom]
+    return max(boas, key=lambda r: r.fps) if boas else None

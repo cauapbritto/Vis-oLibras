@@ -35,7 +35,7 @@ CAMPOS = {
     "taxa_fala": Campo("TAXA_FALA", int, 100, 260),
     "falar_cada_palavra": Campo("FALAR_CADA_PALAVRA", bool),
     "indice_camera": Campo("INDICE_CAMERA", int, 0, 9),
-    "modo_camera": Campo("MODO_CAMERA", str, opcoes=("auto", "dshow", "msmf", "padrao")),
+    "modo_camera": Campo("MODO_CAMERA", str, opcoes=("auto", "dshow_mjpg", "dshow", "msmf", "padrao")),
 }
 # Estado da aplicação que também vale guardar (não vem do config.py)
 ESTADOS = {"verificacao_feita": False}

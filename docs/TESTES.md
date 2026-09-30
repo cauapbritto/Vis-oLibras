@@ -49,6 +49,7 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 - [ ] FPS ≥ 15
 - [ ] Tirar o cabo USB / cobrir a câmera: aparece mensagem de erro, sem travar
 - [ ] Com Zoom/Teams usando a câmera: mensagem clara de câmera em uso
+- [ ] Menu → D: testa cada câmera e modo, abre `reports/diagnostico_camera.png` e salva a combinação boa
 
 ### Reconhecimento
 - [ ] "Modelo com 10 sinais" com ponto verde na barra de baixo (amarelo = faltam sinais no modelo)

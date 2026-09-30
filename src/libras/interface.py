@@ -276,7 +276,8 @@ class JanelaConfiguracoes:
         _titulo_secao(corpo, "Câmera", f_secao)
         ctk.CTkLabel(corpo, text="Modo da câmera (troque se a imagem vier com listras ou não abrir)",
                      font=f_texto, text_color=TEXTO, anchor="w").pack(fill="x", pady=(0, 4))
-        modos = {"Automático": "auto", "DirectShow": "dshow", "Media Foundation": "msmf"}
+        modos = {"Automático": "auto", "DirectShow": "dshow", "DirectShow MJPG": "dshow_mjpg",
+                 "Media Foundation": "msmf"}
         modo = ctk.CTkSegmentedButton(corpo, values=list(modos), font=f_peq, selected_color=DESTAQUE,
                                       selected_hover_color=DESTAQUE_HOVER,
                                       command=lambda rotulo: app._aplicar_preferencia("modo_camera", modos[rotulo]))

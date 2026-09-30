@@ -142,9 +142,12 @@ com as câmeras encontradas quando a aplicação abre. Escolher outra com a câm
 desliga e religa na nova; a escolha fica salva neste computador e vale também para gravar
 sinais e testar a câmera pelo menu. "Procurar câmeras" procura de novo (com a câmera
 desligada), por exemplo depois de conectar uma webcam USB. Ao ligar, a câmera é aberta
-em modos diferentes até dar uma imagem boa: imagem "listrada" (roxa e verde, formato de cor
-lido errado) é descartada. Se nenhum modo der certo, aparece um aviso; dá para escolher o
-modo em Configurações → Câmera (`MODO_CAMERA`).
+em modos diferentes até dar uma imagem boa: imagem "listrada" (roxa e verde) ou com
+chuviscos (formato de imagem lido errado) é descartada. Se nenhum modo der certo, aparece um
+aviso; dá para escolher o modo em Configurações → Câmera (`MODO_CAMERA`). A opção **D** do menu
+(`scripts/demonstracao/diagnosticar_camera.py`) testa cada câmera em cada modo, salva
+`reports/diagnostico_camera.png` com uma miniatura de cada teste e oferece usar a melhor
+combinação.
 
 **Janelas da barra superior.**
 

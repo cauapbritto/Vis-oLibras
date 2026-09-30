@@ -118,7 +118,8 @@ def _indice_camera_do_ambiente() -> int:
 INDICE_CAMERA = _indice_camera_do_ambiente()
 MAX_CAMERAS_PROCURAR = 4       # a janela procura as câmeras 0 a 3 (lista "Câmera 1, 2...")
 # Como abrir a câmera: "auto" (tenta os modos e descarta imagem com defeito),
-# "dshow" (DirectShow), "msmf" (Media Foundation) ou "padrao" (o do OpenCV).
+# "dshow_mjpg" (DirectShow pedindo MJPG), "dshow" (DirectShow), "msmf" (Media Foundation)
+# ou "padrao" (o do OpenCV). O menu (opção D) testa todos e sugere o melhor.
 MODO_CAMERA = "auto"
 LARGURA_CAMERA = 640
 ALTURA_CAMERA = 480

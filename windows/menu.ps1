@@ -204,6 +204,7 @@ while ($true) {
     Write-Host "     1  Abrir a aplicação"
     Write-Host "     V  Testar a voz"
     Write-Host "     F  Conferir a tabela de frases (frases.txt)"
+    Write-Host "     D  Diagnosticar a câmera (imagem com defeito ou não abre)"
     if ($ModoDesenvolvimento) {
         Write-Host "     2  Testar a câmera"
         Write-Host ""
@@ -223,7 +224,7 @@ while ($true) {
     Write-Host "     C  Créditos"
     Write-Host "     0  Sair"
     $opcao = "$(Read-Host "`nEscolha uma opção")".Trim()
-    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v", "f", "c") { $opcao = "invalida" }
+    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v", "f", "c", "d") { $opcao = "invalida" }
     if (-not $ModoDesenvolvimento -and $opcao -eq "2") { $opcao = "simples" }
     switch ($opcao) {
         "1" { Rodar @("scripts/demonstracao/app.py") }
@@ -242,6 +243,7 @@ while ($true) {
         "v" { Rodar @("scripts/demonstracao/testar_voz.py") }
         "f" { Conferir-Frases }
         "c" { Mostrar-Creditos }
+        "d" { Rodar @("scripts/demonstracao/diagnosticar_camera.py") "Veja as dicas acima." }
         "b" { Fazer-Backup }
         "0" { exit 0 }
         default { Aviso "Opção inválida." }

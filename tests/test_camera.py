@@ -188,3 +188,35 @@ def test_listar_cameras_espera_a_camera_acordar(monkeypatch):
 
     monkeypatch.setattr(modulo_camera.cv2, "VideoCapture", Preguicosa)
     assert modulo_camera.listar_cameras(3) == [0]
+
+
+def test_ruido_de_quadro_decodificado_errado_e_detectado():
+    rng = np.random.default_rng(1)
+    lixo = rng.integers(0, 255, (48, 64, 3), dtype=np.uint8)
+    assert modulo_camera.defeito_imagem(lixo) == "ruído"
+    assert modulo_camera.defeito_imagem(_listrado()) == "listras"
+    assert modulo_camera.defeito_imagem(_natural()) is None
+
+
+def test_diagnostico_escolhe_a_combinacao_boa_mais_rapida(monkeypatch):
+    monkeypatch.setattr(modulo_camera.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(modulo_camera.time, "sleep", lambda _s: None)
+    rng = np.random.default_rng(2)
+    imagens = {modulo_camera.cv2.CAP_DSHOW: rng.integers(0, 255, (48, 64, 3), dtype=np.uint8),
+               modulo_camera.cv2.CAP_MSMF: _natural()}
+
+    class SoACamera0(_CapturaPorModo):
+        def __init__(self, indice, backend=None):
+            super().__init__(indice, backend, imagens)
+            self.indice = indice
+
+        def isOpened(self):
+            return self.indice == 0
+
+    monkeypatch.setattr(modulo_camera.cv2, "VideoCapture", SoACamera0)
+    resultados = modulo_camera.diagnosticar(maximo=2, quadros=3)
+    por_modo = {(r.indice, r.modo): r for r in resultados}
+    assert por_modo[(0, "dshow_mjpg")].defeito == "ruído" and por_modo[(0, "msmf")].bom
+    assert not por_modo[(1, "dshow_mjpg")].abriu and (1, "msmf") not in por_modo   # índice 1 pulado
+    melhor = modulo_camera.melhor_combinacao(resultados)
+    assert (melhor.indice, melhor.modo) == (0, "msmf")
