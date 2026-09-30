@@ -41,6 +41,37 @@ function Executar-Python([string[]]$comando, [string[]]$argumentos) {
 Titulo "Librahin - Instalação"
 Write-Host "   Pasta: $Raiz"
 
+# Caminho longo: o Windows limita caminhos a 260 caracteres (se os caminhos longos não
+# estiverem liberados) e algumas bibliotecas têm arquivos ~115 caracteres dentro do .venv.
+# Acontece quando o zip é extraído com a pasta repetida (...up1w9y\...up1w9y).
+function Caminhos-Longos-Liberados {
+    try {
+        $chave = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -ErrorAction Stop
+        return $chave.LongPathsEnabled -eq 1
+    } catch { return $false }
+}
+$LimiteCaminho = 100
+if ($NoWindows -and $Raiz.Length -gt $LimiteCaminho -and -not (Caminhos-Longos-Liberados)) {
+    Aviso "O caminho desta pasta é longo demais para o Windows ($($Raiz.Length) caracteres)."
+    Write-Host "   A instalação falharia no meio. A solução é usar uma pasta de caminho curto."
+    $destino = Join-Path $HOME "Librahin"
+    $n = 2
+    while (Test-Path $destino) { $destino = Join-Path $HOME "Librahin$n"; $n++ }
+    $resposta = Read-Host "Copiar o projeto para $destino e instalar lá? [S/n]"
+    if ("$resposta" -match "^[nN]") {
+        Erro "Mova a pasta do projeto para um caminho curto (ex.: $HOME\Librahin) e rode o INSTALAR.bat de novo."
+        Encerrar 1
+    }
+    New-Item -ItemType Directory -Path $destino | Out-Null
+    Get-ChildItem $Raiz -Force | Where-Object { $_.Name -notin ".venv", "instalar.log" } |
+        Copy-Item -Destination $destino -Recurse -Force
+    Ok "Projeto copiado para $destino (com as gravações e o modelo, se houver)"
+    Write-Host "   A instalação continua numa nova janela. Esta pasta antiga pode ser apagada depois."
+    try { Stop-Transcript | Out-Null } catch {}
+    Start-Process (Join-Path $destino "INSTALAR.bat") -WorkingDirectory $destino
+    exit 0
+}
+
 # 1. Python ------------------------------------------------------------------
 Titulo "[1/6] Python 3.10 a 3.12"
 $python = Encontrar-Python
@@ -117,7 +148,8 @@ if ("$faltando" -match "tkinter") {
 & $PythonVenv -c "import cv2, mediapipe, sklearn, numpy, customtkinter, pyttsx3, PIL"
 if ($LASTEXITCODE -ne 0) {
     Erro "As bibliotecas foram instaladas, mas não carregam (faltando: $faltando). Veja o erro acima."
-    Write-Host "   Tente apagar a pasta .venv do projeto e rodar o INSTALAR.bat de novo."
+    Write-Host "   Apague a pasta .venv do projeto e rode o INSTALAR.bat de novo. Se o erro falar em"
+    Write-Host "   'Long Path' ou 'No such file', mova o projeto para uma pasta de caminho curto (ex.: $HOME\Librahin)."
     Encerrar 1
 }
 Ok "Bibliotecas instaladas e funcionando"

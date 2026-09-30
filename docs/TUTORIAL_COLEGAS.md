@@ -28,6 +28,11 @@ e um **menu com números**.
 
 > Use a pasta extraída, não abra os arquivos de dentro do zip (o instalador não
 > funciona lá dentro).
+>
+> **Caminho curto:** o "Extrair tudo" costuma criar a pasta repetida
+> (`Vis-oLibras-...\Vis-oLibras-...`), e o Windows não aceita caminhos muito longos. Se
+> for o caso, o instalador avisa e oferece copiar o projeto para `C:\Users\<você>\Librahin`
+> e continuar a instalação lá: responda **S**.
 
 ### A3. Instalar (um clique)
 
@@ -233,6 +238,7 @@ Os resultados (accuracy, precision, recall, F1, tempos, matriz de confusão) fic
 | "Extraia o zip antes de usar" | Você abriu o `.bat` de dentro do zip: extraia (A2) e rode o da pasta extraída |
 | "O projeto ainda não foi instalado" | Rode o `INSTALAR.bat` primeiro |
 | "Python não encontrado" | Ver a dica do passo A3 |
+| `No module named 'sklearn...'` ou aviso de "Long Path" | Caminho da pasta longo demais: rode o `INSTALAR.bat` de novo e aceite copiar para `Librahin` (ou mova a pasta para um caminho curto e apague a `.venv`) |
 | "Este Python veio sem o tkinter" | Siga a mensagem: instalador do Python → Modify → marque *tcl/tk and IDLE*; apague a pasta `.venv` e rode o `INSTALAR.bat` |
 | Erro nas bibliotecas / `CERTIFICATE_VERIFY_FAILED` | A rede (faculdade/empresa) está bloqueando: conecte em outra rede (roteador do celular) e rode o `INSTALAR.bat` de novo |
 | Câmera não abre | Feche Teams/Zoom/navegador; se tiver mais de uma câmera, escolha outra na lista ao lado do botão da câmera |
