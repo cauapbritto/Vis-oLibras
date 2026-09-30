@@ -1,0 +1,59 @@
+# Atalhos para usar o container. As pastas data/, models/ e reports/ do
+# computador são montadas no container: gravações, modelo treinado e relatórios
+# ficam no seu computador, não dentro da imagem.
+#
+#   docker compose build                    monta a imagem (uma vez)
+#   docker compose run --rm treinar         treina o modelo com data/raw
+#   docker compose run --rm analisar        analisa o dataset
+#   docker compose run --rm testes          roda os testes automáticos
+#   docker compose run --rm app             interface gráfica (SÓ LINUX, ver docs/DOCKER.md)
+#   docker compose run --rm coletar python scripts/desenvolvimento/coletar_dados.py --sinal OI --pessoa ana   (SÓ LINUX)
+
+# No Linux, para os arquivos criados ficarem no seu usuário (e não no root):
+#   export LIBRAS_UID=$(id -u) LIBRAS_GID=$(id -g)
+x-base: &base
+  build: .
+  image: vis-olibras
+  user: "${LIBRAS_UID:-0}:${LIBRAS_GID:-0}"
+  volumes:
+    - ./data:/app/data
+    - ./models:/app/models
+    - ./reports:/app/reports
+
+x-camera-tela-som: &camera-tela-som
+  devices:
+    - /dev/video0:/dev/video0
+    - /dev/snd:/dev/snd
+  group_add:
+    - video
+    - audio
+  environment:
+    - DISPLAY=${DISPLAY:-:0}
+    - LIBRAS_CAMERA=${LIBRAS_CAMERA:-0}
+  volumes:
+    - ./data:/app/data
+    - ./models:/app/models
+    - ./reports:/app/reports
+    - /tmp/.X11-unix:/tmp/.X11-unix
+
+services:
+  treinar:
+    <<: *base
+    command: python scripts/desenvolvimento/treinar_modelo.py
+
+  analisar:
+    <<: *base
+    command: python scripts/desenvolvimento/analisar_dataset.py
+
+  testes:
+    <<: *base
+    volumes: []            # testes usam dados sintéticos, sem tocar nas suas pastas
+    command: python -m pytest -q
+
+  app:
+    <<: [*base, *camera-tela-som]
+    command: python scripts/demonstracao/app.py
+
+  coletar:
+    <<: [*base, *camera-tela-som]
+    command: python scripts/desenvolvimento/coletar_dados.py --help

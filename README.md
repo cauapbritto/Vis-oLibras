@@ -12,6 +12,9 @@ pequeno de sinais de Libras, montar a sequência de palavras e falar a frase.
 
 > **Vai testar ou gravar sinais para o grupo?** Siga o
 > [tutorial passo a passo](docs/TUTORIAL_COLEGAS.md).
+>
+> **Prefere container?** Treinar, analisar e testar funcionam com Docker em qualquer
+> sistema; câmera e interface, só no Linux. Veja [`docs/DOCKER.md`](docs/DOCKER.md).
 
 ## Dois modos
 

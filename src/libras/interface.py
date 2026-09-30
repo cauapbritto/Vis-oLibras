@@ -201,7 +201,7 @@ class AplicacaoLibras(ctk.CTk):
                                        state="disabled")
         acoes = [
             ("✓  Finalizar frase", self._finalizar_frase),
-            ("🔊  Reproduzir voz", self._reproduzir_voz),
+            ("♪  Reproduzir voz", self._reproduzir_voz),
             ("⌫  Remover última palavra", self._remover_ultima),
             ("✕  Limpar frase", self._limpar),
         ]

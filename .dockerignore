@@ -1,0 +1,20 @@
+# Não vão para a imagem: ambiente local, histórico e dados (montados como volume)
+.venv/
+venv/
+.git/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+tests/.cache/
+dist/
+build/
+*.egg-info/
+data/raw/**/*.npy
+data/metadata.csv
+data/processed/*.npz
+models/*.task
+models/*.joblib
+models/*.json
+reports/*
+!reports/.gitkeep
+*.zip
