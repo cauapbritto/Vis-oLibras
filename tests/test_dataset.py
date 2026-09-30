@@ -67,7 +67,9 @@ def test_analise_de_dataset_consistente(dataset_vazio):
     assert rel.invalidas() == []
     assert rel.inconsistencias == []
     assert rel.pessoas("OI") == {"ana": 4, "bia": 4}
-    assert rel.perfis("OI") == {"direita": 8}
+    # as amostras sintéticas usam a coluna "Right"; com os rótulos do MediaPipe
+    # invertidos, essa é a mão esquerda da pessoa
+    assert rel.perfis("OI") == {"esquerda" if config.NOMES_MAOS_INVERTIDOS else "direita": 8}
     assert "OI" in rel.classes_com_poucas_amostras()  # 8 < mínimo
     classes, matriz = rel.similaridade
     assert classes == ["OI", "SIM"] and matriz.shape == (2, 2)

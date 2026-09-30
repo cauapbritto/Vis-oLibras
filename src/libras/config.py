@@ -122,14 +122,20 @@ CONFIANCA_DETECCAO_POSE = 0.5
 MIN_VISIBILIDADE_OMBROS = 0.5  # abaixo disso a pose é descartada (ombros fora da imagem)
 MAX_IDADE_POSE_S = 0.5  # reaproveita a última pose se a detecção falhar por até este tempo
 
-# Convenção de lateralidade: o MediaPipe classifica "Right"/"Left" supondo que a
-# imagem está espelhada (como uma selfie). Como espelhamos a imagem
-# (ESPELHAR_IMAGEM = True), "Right" corresponde à mão direita real da pessoa.
-# Coleta e tempo real passam pelo mesmo extrator, então a convenção é sempre a
-# mesma nos dois modos.
+# Convenção de lateralidade. Com a imagem espelhada, o MediaPipe (API Tasks)
+# entrega os rótulos "Right"/"Left" INVERTIDOS: a mão direita da pessoa vem como
+# "Left". As gravações e o modelo usam os rótulos como o MediaPipe entrega (coleta
+# e tempo real passam pelo mesmo extrator, então a convenção é sempre a mesma e o
+# reconhecimento não é afetado); só os NOMES e as cores mostrados na tela são
+# corrigidos (extrator.lado_da_pessoa).
 #
-# Validação (Fase 1): levante só a mão DIREITA diante da câmera; a tela deve
-# mostrar "Mão direita". Se mostrar "Mão esquerda", mude para True.
+# Validação: levante só a mão DIREITA diante da câmera; a tela deve mostrar
+# "Mão direita" (em verde). Se num computador aparecer "Mão esquerda", mude para False.
+NOMES_MAOS_INVERTIDOS = True
+
+# Troca os rótulos JÁ NA EXTRAÇÃO, ou seja, muda o que é GRAVADO. Não altere com
+# a coleta em andamento: as gravações antigas e as novas ficariam incompatíveis.
+# (Se usar True, use também NOMES_MAOS_INVERTIDOS = False.)
 TROCAR_LADOS = False
 
 # =============================================================================

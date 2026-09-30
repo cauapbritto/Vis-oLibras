@@ -44,7 +44,7 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 ### Câmera
 - [ ] `python scripts/desenvolvimento/testar_deteccao.py` abre a imagem em até ~5 s
 - [ ] A imagem aparece espelhada (levantar a mão direita = mão do lado direito da tela)
-- [ ] Só a mão direita → "Mao direita" (se não, `TROCAR_LADOS = True` no `config.py`)
+- [ ] Só a mão direita → "Mao direita" em verde (se aparecer trocado, `NOMES_MAOS_INVERTIDOS = False` no `config.py`)
 - [ ] Só a esquerda → "Mao esquerda"; as duas → "Ambas as maos"
 - [ ] FPS ≥ 15
 - [ ] Tirar o cabo USB / cobrir a câmera: aparece mensagem de erro, sem travar

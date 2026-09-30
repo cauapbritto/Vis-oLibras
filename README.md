@@ -176,8 +176,11 @@ python scripts/desenvolvimento/testar_deteccao.py            # --camera 1 para o
 ```
 
 Mostra landmarks (verde = direita, azul = esquerda), FPS e mãos detectadas. Só a mão
-**direita** deve mostrar "Mao direita"; se aparecer "esquerda", use `TROCAR_LADOS = True`
-no `config.py`.
+**direita** deve mostrar "Mao direita" (em verde). O MediaPipe entrega os rótulos das mãos
+invertidos com a imagem espelhada; os dados gravados usam os rótulos dele e só os nomes na
+tela são corrigidos (`NOMES_MAOS_INVERTIDOS = True` no `config.py`). Se num computador a
+tela mostrar os nomes trocados, mude para `False`. Não use `TROCAR_LADOS` com a coleta em
+andamento: ele muda o que é gravado.
 
 **2. Coletar dados** — preencha antes [`docs/SINAIS.md`](docs/SINAIS.md) com a variante
 de cada sinal:

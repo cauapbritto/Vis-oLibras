@@ -56,8 +56,10 @@ def estatisticas_amostra(frames: np.ndarray) -> dict[str, float]:
 
 def perfil_maos(estatisticas: dict[str, float]) -> str:
     """Quais mãos aparecem na maior parte da amostra: ambas, direita, esquerda ou nenhuma."""
-    direita = estatisticas["pct_mao_direita"] > 0.5
+    direita = estatisticas["pct_mao_direita"] > 0.5    # colunas gravadas (rótulos do MediaPipe)
     esquerda = estatisticas["pct_mao_esquerda"] > 0.5
+    if config.NOMES_MAOS_INVERTIDOS:                   # nomes pelo lado real da pessoa
+        direita, esquerda = esquerda, direita
     if direita and esquerda:
         return "ambas"
     return "direita" if direita else "esquerda" if esquerda else "nenhuma"

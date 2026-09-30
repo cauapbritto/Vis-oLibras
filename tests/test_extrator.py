@@ -64,12 +64,25 @@ def _mao_falsa(lado, x_punho, confianca=0.9):
     return Mao(lado=lado, pontos=pontos, confianca=confianca)
 
 
-def test_duas_maos_com_o_mesmo_lado_sao_separadas_pela_posicao():
+@pytest.mark.parametrize("invertidos", [True, False])
+def test_duas_maos_com_o_mesmo_lado_sao_separadas_pela_posicao(monkeypatch, invertidos):
+    monkeypatch.setattr(config, "NOMES_MAOS_INVERTIDOS", invertidos)
     resultado = ResultadoExtracao([_mao_falsa("Right", 0.3), _mao_falsa("Right", 0.7)])
     por_lado = resultado.maos_por_lado()
-    # imagem espelhada: a mão direita da pessoa aparece à direita da imagem
-    assert por_lado["Right"].pontos[0, 0] == pytest.approx(0.7)
-    assert por_lado["Left"].pontos[0, 0] == pytest.approx(0.3)
+    # imagem espelhada: a mão direita da pessoa aparece à direita da imagem e recebe
+    # o mesmo rótulo que o MediaPipe dá à mão direita ("Left" quando ele inverte)
+    rotulo_direita = "Left" if invertidos else "Right"
+    rotulo_esquerda = "Right" if invertidos else "Left"
+    assert por_lado[rotulo_direita].pontos[0, 0] == pytest.approx(0.7)
+    assert por_lado[rotulo_esquerda].pontos[0, 0] == pytest.approx(0.3)
+
+
+def test_lado_da_pessoa(monkeypatch):
+    from libras.extrator import lado_da_pessoa
+    monkeypatch.setattr(config, "NOMES_MAOS_INVERTIDOS", True)
+    assert lado_da_pessoa("Left") == "Right" and lado_da_pessoa("Right") == "Left"
+    monkeypatch.setattr(config, "NOMES_MAOS_INVERTIDOS", False)
+    assert lado_da_pessoa("Left") == "Left" and lado_da_pessoa("Right") == "Right"
 
 
 def test_linha_bruta_tem_layout_fixo():

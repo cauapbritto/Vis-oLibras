@@ -1,6 +1,6 @@
 import numpy as np
 
-from libras import desenho
+from libras import config, desenho
 from libras.desenho import descrever_maos, desenhar_maos, desenhar_painel, sem_acentos
 from libras.extrator import LADO_DIREITO, LADO_ESQUERDO, Mao, ResultadoExtracao
 
@@ -9,10 +9,15 @@ def _mao(lado):
     return Mao(lado=lado, pontos=np.full((21, 3), 0.5, dtype=np.float32), confianca=0.9)
 
 
-def test_descrever_maos():
+def test_descrever_maos(monkeypatch):
+    monkeypatch.setattr(config, "NOMES_MAOS_INVERTIDOS", False)
     assert descrever_maos(ResultadoExtracao()) == "Nenhuma mão detectada"
     assert descrever_maos(ResultadoExtracao([_mao(LADO_DIREITO)])) == "Mão direita"
     assert descrever_maos(ResultadoExtracao([_mao(LADO_ESQUERDO)])) == "Mão esquerda"
+    # o MediaPipe entrega a mão direita da pessoa como "Left": a tela corrige o nome
+    monkeypatch.setattr(config, "NOMES_MAOS_INVERTIDOS", True)
+    assert descrever_maos(ResultadoExtracao([_mao(LADO_ESQUERDO)])) == "Mão direita"
+    assert descrever_maos(ResultadoExtracao([_mao(LADO_DIREITO)])) == "Mão esquerda"
     ambas = ResultadoExtracao([_mao(LADO_DIREITO), _mao(LADO_ESQUERDO)])
     assert descrever_maos(ambas) == "Ambas as mãos"
 

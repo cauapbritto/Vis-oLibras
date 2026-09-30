@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 
 from libras import config
-from libras.extrator import CONEXOES_MAO, LADO_DIREITO, LADO_ESQUERDO, ResultadoExtracao
+from libras.extrator import CONEXOES_MAO, LADO_DIREITO, LADO_ESQUERDO, ResultadoExtracao, lado_da_pessoa
 
 # Cores em BGR
 COR_DIREITA = (80, 200, 80)     # verde
@@ -28,6 +28,7 @@ COR_GRAVANDO = (60, 60, 230)    # vermelho
 COR_POSE = (200, 200, 200)      # cinza claro
 COR_FUNDO_PAINEL = (0, 0, 0)
 
+# Por lado REAL da pessoa (converta o rótulo gravado com lado_da_pessoa)
 NOMES_LADO = {LADO_DIREITO: "Direita", LADO_ESQUERDO: "Esquerda"}
 CORES_LADO = {LADO_DIREITO: COR_DIREITA, LADO_ESQUERDO: COR_ESQUERDA}
 
@@ -152,8 +153,8 @@ def desenhar_legenda(frame: np.ndarray, linhas: list[tuple[str, tuple[int, int, 
 
 
 def descrever_maos(resultado: ResultadoExtracao) -> str:
-    """Texto com as mãos detectadas: nenhuma, direita, esquerda ou ambas."""
-    lados = resultado.lados
+    """Texto com as mãos detectadas (lado real da pessoa): nenhuma, direita, esquerda ou ambas."""
+    lados = {lado_da_pessoa(lado) for lado in resultado.lados}
     if {LADO_DIREITO, LADO_ESQUERDO} <= lados:
         return "Ambas as mãos"
     if LADO_DIREITO in lados:
@@ -167,7 +168,8 @@ def desenhar_maos(frame: np.ndarray, resultado: ResultadoExtracao) -> None:
     """Desenha conexões, pontos e o rótulo do lado de cada mão (altera `frame`)."""
     altura, largura = frame.shape[:2]
     for mao in resultado.maos:
-        cor = CORES_LADO.get(mao.lado, COR_TEXTO)
+        lado = lado_da_pessoa(mao.lado)
+        cor = CORES_LADO.get(lado, COR_TEXTO)
         # Coordenadas normalizadas [0, 1] -> pixels
         pixels = [(int(x * largura), int(y * altura)) for x, y, _ in mao.pontos]
 
@@ -179,7 +181,7 @@ def desenhar_maos(frame: np.ndarray, resultado: ResultadoExtracao) -> None:
 
         # Rótulo perto do punho (ponto 0)
         x, y = pixels[0]
-        rotulo = f"{NOMES_LADO.get(mao.lado, mao.lado)} {mao.confianca:.2f}"
+        rotulo = f"{NOMES_LADO.get(lado, lado)} {mao.confianca:.2f}"
         escrever(frame, rotulo, (x - 40, y + 25), cor, escala=0.6)
 
 

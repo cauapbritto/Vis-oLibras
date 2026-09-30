@@ -37,6 +37,13 @@ LADO_ESQUERDO = "Left"
 _LADO_OPOSTO = {LADO_DIREITO: LADO_ESQUERDO, LADO_ESQUERDO: LADO_DIREITO}
 
 
+def lado_da_pessoa(lado: str) -> str:
+    """Converte o rótulo gravado no lado real da pessoa (e vice-versa: a troca é
+    simétrica). O MediaPipe entrega os rótulos invertidos com a imagem espelhada;
+    ver config.NOMES_MAOS_INVERTIDOS. Use nos NOMES e cores mostrados, nunca nos dados."""
+    return _LADO_OPOSTO.get(lado, lado) if config.NOMES_MAOS_INVERTIDOS else lado
+
+
 class ErroModelo(RuntimeError):
     """O arquivo de modelo do MediaPipe não existe, não pôde ser baixado ou carregado."""
 
@@ -76,13 +83,14 @@ class ResultadoExtracao:
 
         Às vezes o MediaPipe classifica as duas mãos com o mesmo lado. Nesse caso,
         decidimos pela posição na imagem: com a imagem espelhada, a mão direita
-        da pessoa aparece à direita da imagem.
+        da pessoa aparece à direita da imagem. Ela recebe o MESMO rótulo que o
+        MediaPipe daria à mão direita (lado_da_pessoa), para os dados seguirem
+        sempre a mesma convenção.
         """
         if len(self.maos) == 2 and self.maos[0].lado == self.maos[1].lado:
             esq_imagem, dir_imagem = sorted(self.maos, key=lambda m: m.pontos[0, 0])
-            if config.ESPELHAR_IMAGEM:
-                return {LADO_ESQUERDO: esq_imagem, LADO_DIREITO: dir_imagem}
-            return {LADO_ESQUERDO: dir_imagem, LADO_DIREITO: esq_imagem}
+            direita, esquerda = (dir_imagem, esq_imagem) if config.ESPELHAR_IMAGEM else (esq_imagem, dir_imagem)
+            return {lado_da_pessoa(LADO_DIREITO): direita, lado_da_pessoa(LADO_ESQUERDO): esquerda}
 
         por_lado: dict[str, Mao] = {}
         for mao in sorted(self.maos, key=lambda m: m.confianca):
