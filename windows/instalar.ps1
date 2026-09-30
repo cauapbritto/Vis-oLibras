@@ -2,6 +2,9 @@
 # Pode ser executado de novo quantas vezes quiser: o que já existe é aproveitado.
 . (Join-Path $PSScriptRoot "comum.ps1")
 $Log = Join-Path $Raiz "instalar.log"
+# Python em modo UTF-8: sem isso, no Windows o pip lê arquivos com a codificação
+# antiga do sistema (cp1252) e pode travar em acentos.
+$env:PYTHONUTF8 = "1"
 try { Start-Transcript -Path $Log -Force | Out-Null } catch {}
 
 function Encerrar([int]$codigo) {
@@ -72,16 +75,24 @@ if (Test-Path $PythonVenv) {
 
 # 3. pip atualizado (usa os certificados do Windows: resolve redes com proxy) --
 Titulo "[3/6] Atualizando o pip"
+# O pip 24.2 ou mais novo usa os certificados do Windows, o que resolve as redes que
+# interceptam HTTPS (faculdade, empresa). Atenção: sem conseguir acessar a internet,
+# o pip diz "já instalado" e termina SEM erro, então conferimos a versão.
+function Pip-Atualizado {
+    & $PythonVenv -c "import pip, sys; v = tuple(int(x) for x in pip.__version__.split('.')[:2]); sys.exit(0 if v >= (24, 2) else 1)"
+    return $LASTEXITCODE -eq 0
+}
 & $PythonVenv -m pip install --upgrade pip
-if ($LASTEXITCODE -ne 0) {
-    Aviso "Falhou (comum em redes que interceptam HTTPS). Tentando de novo..."
+if (-not (Pip-Atualizado)) {
+    Aviso "A rede bloqueou a atualização (comum em redes que interceptam HTTPS). Tentando de novo..."
     & $PythonVenv -m pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org
 }
-if ($LASTEXITCODE -ne 0) {
-    Erro "Não foi possível atualizar o pip. Verifique a internet ou use outra rede (ex.: celular)."
+if (-not (Pip-Atualizado)) {
+    Erro "Não foi possível atualizar o pip. Verifique a internet ou use outra rede (ex.: roteador do celular)."
     Encerrar 1
 }
-Ok "pip atualizado"
+$versaoPip = & $PythonVenv -c "import pip; print(pip.__version__)"
+Ok "pip atualizado (versão $versaoPip)"
 
 # 4. Dependências --------------------------------------------------------------
 Titulo "[4/6] Instalando as bibliotecas (alguns minutos)"

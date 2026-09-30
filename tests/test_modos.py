@@ -115,3 +115,9 @@ def test_instalador_windows_tem_finais_de_linha_do_windows():
     for arquivo in ("INSTALAR.bat", "Librahin.bat", *sorted((RAIZ / "windows").glob("*.ps1"))):
         conteudo = (RAIZ / arquivo).read_bytes()
         assert b"\n" in conteudo and conteudo.count(b"\n") == conteudo.count(b"\r\n"), arquivo
+
+
+def test_arquivos_de_dependencias_sem_acentos():
+    """O pip antigo no Windows lê esses arquivos em cp1252 e trava em acentos (UnicodeDecodeError)."""
+    for arquivo in ("requirements.txt", "requirements-dev.txt"):
+        assert (RAIZ / arquivo).read_bytes().isascii(), arquivo

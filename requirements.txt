@@ -1,26 +1,26 @@
-# MODO USUÁRIO / DEMONSTRAÇÃO - o necessário para rodar a aplicação.
+# MODO USUARIO / DEMONSTRACAO - o necessario para rodar a aplicacao.
 # Python 3.10 a 3.12 (recomendado 3.11). Para treinar: requirements-dev.txt
 #
-# Após a primeira instalação que funcionar em todas as máquinas do grupo,
-# fixar as versões exatas com: pip freeze > requirements-lock.txt
+# Apos a primeira instalacao que funcionar em todas as maquinas do grupo,
+# fixar as versoes exatas com: pip freeze > requirements-lock.txt
 
-# Câmera e imagem. Usamos o "contrib" porque é o que o MediaPipe instala: ter
+# Camera e imagem. Usamos o "contrib" porque e o que o MediaPipe instala: ter
 # opencv-python e opencv-contrib-python juntos causa conflito (mesmo pacote cv2).
 opencv-contrib-python>=4.8
 
-# Landmarks das mãos e da pose (API Tasks)
+# Landmarks das maos e da pose (API Tasks)
 mediapipe>=0.10.14
 
-# Cálculo numérico
+# Calculo numerico
 numpy>=1.26
 
-# Carregar e usar o modelo treinado (o modelo salvo é um objeto do scikit-learn)
+# Carregar e usar o modelo treinado (o modelo salvo e um objeto do scikit-learn)
 scikit-learn>=1.3
 joblib>=1.3
 
 # Voz offline
 pyttsx3>=2.90
 
-# Interface gráfica (no Linux: sudo apt install python3-tk) e imagens com acentos
+# Interface grafica (no Linux: sudo apt install python3-tk) e imagens com acentos
 customtkinter>=5.2
 pillow>=10.1

@@ -1,7 +1,7 @@
-# MODO DESENVOLVIMENTO / TREINAMENTO - aplicação + coleta, análise, treino e testes.
+# MODO DESENVOLVIMENTO / TREINAMENTO - aplicacao + coleta, analise, treino e testes.
 -r requirements.txt
 
-# Gráficos da análise do dataset e da matriz de confusão
+# Graficos da analise do dataset e da matriz de confusao
 matplotlib>=3.8
 
 # Testes automatizados
