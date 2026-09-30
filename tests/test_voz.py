@@ -94,6 +94,61 @@ def test_erro_de_audio_durante_a_fala_e_recupera():
     voz.encerrar()
 
 
+def test_motor_que_pede_recriar_e_criado_de_novo_a_cada_fala():
+    criados = []
+
+    class MotorDescartavel(MotorFalso):
+        recriar_por_fala = True
+
+    def criar():
+        criados.append(MotorDescartavel())
+        return criados[-1]
+
+    voz = Voz(criar_motor=criar, politica="enfileirar")
+    voz.falar("um")
+    voz.falar("dois")
+    _esperar(voz)
+    voz.encerrar()
+    assert [m.falas for m in criados] == [["um"], ["dois"]]
+
+
+class _Resultado:
+    def __init__(self, saida, codigo=0):
+        self.stdout, self.returncode = saida.encode(), codigo
+
+
+def test_motor_windows_le_a_voz_e_os_erros(monkeypatch):
+    chamadas = []
+    monkeypatch.setattr(modulo_voz.shutil, "which", lambda nome: "powershell")
+    monkeypatch.setattr(modulo_voz.subprocess, "run",
+                        lambda comando, **_: chamadas.append(comando) or _Resultado("OK:Microsoft Maria (pt-BR)"))
+    motor = modulo_voz.MotorWindows()
+    assert motor.nome_voz == "Microsoft Maria (pt-BR)"
+    motor.falar_bloqueante("não")
+    assert len(chamadas) == 2 and "-EncodedCommand" in chamadas[-1]
+
+    monkeypatch.setattr(modulo_voz.subprocess, "run",
+                        lambda comando, **_: _Resultado("ERRO:nenhuma voz instalada no Windows", 1))
+    with pytest.raises(ErroVoz, match="nenhuma voz instalada"):
+        modulo_voz.MotorWindows()
+
+
+def test_texto_com_acento_chega_inteiro_ao_script_do_windows(monkeypatch):
+    import base64
+    import re
+    scripts = []
+
+    def rodar(comando, **_):
+        scripts.append(base64.b64decode(comando[-1]).decode("utf-16-le"))
+        return _Resultado("OK:voz")
+
+    monkeypatch.setattr(modulo_voz.shutil, "which", lambda nome: "powershell")
+    monkeypatch.setattr(modulo_voz.subprocess, "run", rodar)
+    modulo_voz.MotorWindows().falar_bloqueante("eu não sei, 'obrigado'")
+    texto = re.search(r"FromBase64String\('([^']*)'\)", scripts[-1]).group(1)
+    assert base64.b64decode(texto).decode("utf-8") == "eu não sei, 'obrigado'"
+
+
 def test_politica_invalida():
     with pytest.raises(ValueError):
         Voz(criar_motor=MotorFalso, politica="gritar")

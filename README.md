@@ -96,6 +96,10 @@ Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece 
 final" e é falada em português do Brasil. A frase é a própria sequência de sinais (glosa,
 ex.: "EU NOME CAUA"): o MVP não traduz a gramática da Libras.
 
+**Sem voz?** `python scripts/demonstracao/testar_voz.py` (ou menu → V) testa cada motor de
+voz do sistema, um por vez (no Windows: as vozes do sistema pelo PowerShell/System.Speech,
+que é o padrão, e o pyttsx3). Se só um funcionar, escolha-o em `MOTOR_VOZ` no `config.py`.
+
 **Na janela do OpenCV (`executar.py`):** C limpa, BACKSPACE apaga a última palavra,
 ESPAÇO encerra a frase, Q/ESC sai. Opções: `--sem-voz`, `--camera 1` e os parâmetros de
 estabilidade abaixo.

@@ -56,6 +56,7 @@ na pasta do projeto). Aparece o menu:
 ```
    APRESENTAÇÃO
      1  Abrir a aplicação
+     V  Testar a voz
      2  Testar a câmera
 
    GRAVAR E TREINAR
@@ -206,7 +207,8 @@ Os resultados (accuracy, precision, recall, F1, tempos, matriz de confusão) fic
 | Câmera não abre | Feche Teams/Zoom/navegador |
 | Tudo "Descartada" | Afaste-se (ombros visíveis) e melhore a luz |
 | Tecla Q não responde | Clique uma vez na janela da câmera e aperte Q de novo |
-| Voz em inglês ou muda | Configurações → Hora e idioma → Idioma e região → adicionar Português (Brasil) com fala |
+| Voz em inglês | Configurações → Hora e idioma → Idioma e região → Português (Brasil) → Opções → instalar a **Fala** (conversão de texto em fala) |
+| Voz muda | Menu → **V (Testar a voz)**: ele testa cada jeito de falar, um por vez. Anote qual você ouviu; se o automático não funcionar e outro funcionar, troque `MOTOR_VOZ` em `src/libras/config.py` pelo nome dele |
 
 ---
 

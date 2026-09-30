@@ -96,6 +96,7 @@ while ($true) {
     Titulo "Vis-oLibras - Libras para texto e voz"
     Write-Host "   APRESENTAÇÃO"
     Write-Host "     1  Abrir a aplicação"
+    Write-Host "     V  Testar a voz"
     if ($ModoDesenvolvimento) {
         Write-Host "     2  Testar a câmera"
         Write-Host ""
@@ -113,7 +114,7 @@ while ($true) {
     Write-Host ""
     Write-Host "     0  Sair"
     $opcao = "$(Read-Host "`nEscolha uma opção")".Trim()
-    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2") { $opcao = "invalida" }
+    if (-not $ModoDesenvolvimento -and $opcao -notin "0", "1", "2", "v") { $opcao = "invalida" }
     if (-not $ModoDesenvolvimento -and $opcao -eq "2") { $opcao = "simples" }
     switch ($opcao) {
         "1" { Rodar @("scripts/demonstracao/app.py") }
@@ -129,6 +130,7 @@ while ($true) {
             if ($pessoa) { Rodar @("scripts/desenvolvimento/teste_controlado.py", "--participante", $pessoa, "--incluir-nada") }
         }
         "simples" { Write-Host "Aperte Q na janela da câmera para voltar."; Rodar @("scripts/demonstracao/executar.py") }
+        "v" { Rodar @("scripts/demonstracao/testar_voz.py") }
         "0" { exit 0 }
         default { Aviso "Opção inválida." }
     }

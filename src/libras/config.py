@@ -291,8 +291,10 @@ TESTE_RESULTADO_S = 1.5   # tempo mostrando o resultado (D descarta nesse interv
 # Voz (Text-to-Speech)
 # =============================================================================
 
-# Voz offline e gratuita: pyttsx3 (Windows: SAPI5; Linux: eSpeak) e, no macOS,
-# o comando "say" do sistema (o pyttsx3 trava fora da thread principal no Mac).
+# Voz offline e gratuita. Windows: vozes do sistema (System.Speech, pelo
+# PowerShell), com o pyttsx3 como alternativa; Linux: pyttsx3 (eSpeak);
+# macOS: o comando "say" (o pyttsx3 trava fora da thread principal no Mac).
+MOTOR_VOZ = "auto"           # "auto", "windows", "pyttsx3" ou "comando" (say/espeak-ng)
 IDIOMAS_VOZ = ("pt-br", "pt_br", "brazil", "pt")  # preferência, do mais específico
 TAXA_FALA = 170              # velocidade da fala (palavras por minuto, aprox.)
 FALAR_AO_FINALIZAR = True    # fala a frase quando ela é encerrada
