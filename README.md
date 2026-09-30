@@ -137,6 +137,12 @@ então cada fala começa na hora. Além disso:
   ombros 1 a cada 3 quadros e reduz a imagem enviada ao MediaPipe. A barra de baixo mostra
   "modo leve" quando está ativo.
 
+**Mais de uma câmera?** Ao lado do botão da câmera há uma lista ("Câmera 1", "Câmera 2"...)
+com as câmeras encontradas quando a aplicação abre. Escolher outra com a câmera ligada
+desliga e religa na nova; a escolha fica salva neste computador e vale também para gravar
+sinais e testar a câmera pelo menu. "Procurar câmeras" procura de novo (com a câmera
+desligada), por exemplo depois de conectar uma webcam USB.
+
 **Janelas da barra superior.**
 
 - **Configurações:** confiança mínima, confirmação rápida, modo leve, pausa para encerrar a

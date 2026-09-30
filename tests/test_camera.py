@@ -73,3 +73,23 @@ def test_espelhamento(monkeypatch):
 def test_ler_sem_abrir():
     with pytest.raises(ErroCamera, match="não foi aberta"):
         Camera().ler()
+
+
+def test_listar_cameras_so_devolve_as_que_entregam_imagem(monkeypatch):
+    from libras import camera as modulo
+
+    class CapturaFalsa:
+        def __init__(self, indice, *_backend):
+            self.indice = indice
+
+        def isOpened(self):
+            return self.indice in (0, 2)
+
+        def read(self):
+            return (self.indice == 0, None)   # a 2 abre mas não manda imagem
+
+        def release(self):
+            pass
+
+    monkeypatch.setattr(modulo.cv2, "VideoCapture", CapturaFalsa)
+    assert modulo.listar_cameras(4) == [0]

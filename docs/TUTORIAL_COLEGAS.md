@@ -85,7 +85,9 @@ Confira e depois aperte **Q** na janela da câmera para voltar ao menu:
 - [ ] Levantando **só a esquerda** aparece "Mao esquerda" (linha azul)
 - [ ] FPS **15 ou mais**
 
-> Câmera não abre? Feche Teams, Zoom e o navegador e tente de novo.
+> Câmera não abre? Feche Teams, Zoom e o navegador e tente de novo. Tem mais de uma câmera
+> (a do notebook e uma USB, por exemplo)? Abra a aplicação (opção 1) e escolha na lista ao lado
+> do botão "Iniciar câmera": a escolha vale também para o teste de câmera e para a gravação.
 
 ### A6. Combinar os sinais com o grupo
 
@@ -233,7 +235,7 @@ Os resultados (accuracy, precision, recall, F1, tempos, matriz de confusão) fic
 | "Python não encontrado" | Ver a dica do passo A3 |
 | "Este Python veio sem o tkinter" | Siga a mensagem: instalador do Python → Modify → marque *tcl/tk and IDLE*; apague a pasta `.venv` e rode o `INSTALAR.bat` |
 | Erro nas bibliotecas / `CERTIFICATE_VERIFY_FAILED` | A rede (faculdade/empresa) está bloqueando: conecte em outra rede (roteador do celular) e rode o `INSTALAR.bat` de novo |
-| Câmera não abre | Feche Teams/Zoom/navegador |
+| Câmera não abre | Feche Teams/Zoom/navegador; se tiver mais de uma câmera, escolha outra na lista ao lado do botão da câmera |
 | Tudo "Descartada" | Afaste-se (ombros visíveis) e melhore a luz |
 | Tecla Q não responde | Clique uma vez na janela da câmera e aperte Q de novo |
 | Voz em inglês | Configurações → Hora e idioma → Idioma e região → Português (Brasil) → Opções → instalar a **Fala** (conversão de texto em fala) |

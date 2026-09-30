@@ -34,6 +34,7 @@ CAMPOS = {
     "pausa_frase_s": Campo("PAUSA_FRASE_S", float, 1.0, 6.0),
     "taxa_fala": Campo("TAXA_FALA", int, 100, 260),
     "falar_cada_palavra": Campo("FALAR_CADA_PALAVRA", bool),
+    "indice_camera": Campo("INDICE_CAMERA", int, 0, 9),
 }
 # Estado da aplicação que também vale guardar (não vem do config.py)
 ESTADOS = {"verificacao_feita": False}

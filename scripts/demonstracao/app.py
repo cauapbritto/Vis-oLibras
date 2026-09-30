@@ -22,7 +22,8 @@ from libras import config
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--camera", type=int, default=config.INDICE_CAMERA, help="índice da webcam")
+    parser.add_argument("--camera", type=int, default=None,
+                        help="índice da webcam (padrão: a escolhida na janela, ou 0)")
     parser.add_argument("--tema", choices=["escuro", "claro"], default="escuro", help="aparência da janela")
     args = parser.parse_args()
     try:

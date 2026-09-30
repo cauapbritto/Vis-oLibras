@@ -19,7 +19,7 @@ import cv2
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
-from libras import config
+from libras import config, preferencias
 from libras.camera import Camera, ErroCamera
 from libras.desenho import (COR_AVISO, COR_TEXTO, descrever_maos, desenhar_maos, desenhar_painel,
                             desenhar_pose, eh_tecla_sair, janela_fechada, ler_tecla)
@@ -74,6 +74,7 @@ def executar(indice_camera: int) -> None:
 
 
 def main() -> int:
+    preferencias.carregar()  # ex.: a câmera escolhida na janela da aplicação
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--camera", type=int, default=config.INDICE_CAMERA,
                         help=f"índice da webcam (padrão: {config.INDICE_CAMERA})")

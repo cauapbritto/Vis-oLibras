@@ -33,6 +33,7 @@ from PIL import Image, ImageDraw
 
 import libras
 from libras import config, preferencias
+from libras.camera import listar_cameras
 from libras.classificador import ErroClassificador, carregar_classificador
 from libras.desenho import descrever_maos, fonte_com_acentos, icone_mao
 from libras.estabilizador import Estabilizador
@@ -490,12 +491,15 @@ class JanelaVerificacao:
 # --- janela --------------------------------------------------------------------------------
 
 class AplicacaoLibras(ctk.CTk):
-    def __init__(self, indice_camera: int = config.INDICE_CAMERA) -> None:
+    def __init__(self, indice_camera: int | None = None) -> None:
         super().__init__()
         self.title("Librahin")
         self._definir_icone(self)
         self._ajustar_tamanho()
-        self.indice_camera = indice_camera
+        self.indice_camera = config.INDICE_CAMERA if indice_camera is None else indice_camera
+        self.cameras: list[int] | None = None      # índices encontrados (None = ainda procurando)
+        self._fila_cameras: queue.Queue = queue.Queue()
+        self._religar_camera = False               # trocou de câmera com ela ligada
 
         # Carregados em segundo plano (_carregar), para a janela aparecer na hora
         self.classificador = None
@@ -588,9 +592,19 @@ class AplicacaoLibras(ctk.CTk):
                 aviso = str(avisos[0].message) if avisos else None
             except ErroClassificador as e:
                 erro = str(e)
+            # antes de liberar o botão: procurar e ligar a câmera ao mesmo tempo daria conflito
+            self._fila_carga.put(("etapa", "Procurando câmeras..."))
+            self._procurar_cameras()
             self._fila_carga.put(("pronto", (ProcessadorCamera, classificador, erro, aviso)))
         except Exception as e:  # nunca deixar a janela presa em "Carregando"
             self._fila_carga.put(("falha", str(e)))
+
+    def _procurar_cameras(self) -> None:
+        """Procura as câmeras (em thread; a câmera deste programa precisa estar desligada)."""
+        try:
+            self._fila_cameras.put(listar_cameras())
+        except Exception:
+            self._fila_cameras.put([])
 
     def _verificar_carga(self) -> None:
         while True:
@@ -699,6 +713,13 @@ class AplicacaoLibras(ctk.CTk):
                                         command=self._alternar_camera)
         self.btn_camera.pack(side="left", anchor="n")
         self._estilo_botao_camera()
+        self.menu_camera = ctk.CTkOptionMenu(
+            controles, values=[self._nome_camera(self.indice_camera)], command=self._escolher_camera,
+            width=128, height=38, corner_radius=8, font=self._f_botao, dropdown_font=self._f_botao,
+            fg_color=BOTAO, button_color=BOTAO, button_hover_color=BOTAO_HOVER, text_color=TEXTO,
+            dropdown_fg_color=SUPERFICIE, dropdown_hover_color=BOTAO_HOVER, dropdown_text_color=TEXTO)
+        self.menu_camera.set(self._nome_camera(self.indice_camera))
+        self.menu_camera.pack(side="left", anchor="n", padx=(8, 0))
         # aviso ao lado do botão, alinhado pela primeira linha (textos longos quebram para baixo)
         self._aviso_ponto = ctk.CTkFrame(controles, width=8, height=8, corner_radius=4, fg_color=STATUS_ATENCAO)
         self.lbl_aviso = ctk.CTkLabel(controles, text="", font=self._f_texto, text_color=TEXTO, height=20,
@@ -850,6 +871,8 @@ class AplicacaoLibras(ctk.CTk):
     def _passo_do_ciclo(self) -> None:
         if self._carregando:
             self._verificar_carga()
+        if not self._fila_cameras.empty():
+            self._receber_cameras(self._fila_cameras.get())
         if self.processador is not None:
             for tipo, dado in self.processador.eventos():
                 self._tratar_evento(tipo, dado)
@@ -892,6 +915,9 @@ class AplicacaoLibras(ctk.CTk):
                 self._mostrar_imagem(_tela_vazia(*TEXTOS_VAZIOS["desligada"]))
             self.lbl_desempenho.configure(text="")
             self._verificacao = None
+            if self._religar_camera:   # trocou de câmera com ela ligada: liga a nova
+                self._religar_camera = False
+                self._iniciar_camera()
 
     def _mostrar_quadro(self, quadro) -> None:
         rgb = cv2.cvtColor(quadro.imagem, cv2.COLOR_BGR2RGB)
@@ -917,6 +943,43 @@ class AplicacaoLibras(ctk.CTk):
         self.video.configure(image=imagem)
         if self.apresentacao is not None and self.apresentacao.aberta:
             self.apresentacao.mostrar_vazia(imagem)
+
+    # --- escolha da câmera ----------------------------------------------------------------
+
+    PROCURAR = "Procurar câmeras"
+
+    @staticmethod
+    def _nome_camera(indice: int) -> str:
+        return f"Câmera {indice + 1}"   # para as pessoas, a primeira é a "Câmera 1" (índice 0)
+
+    def _receber_cameras(self, cameras: list[int]) -> None:
+        self.cameras = cameras
+        if cameras and self.indice_camera not in cameras and self.processador is None:
+            self.indice_camera = cameras[0]   # a escolhida antes não está conectada agora
+        nomes = [self._nome_camera(i) for i in cameras] or ["Nenhuma câmera"]
+        self.menu_camera.configure(values=nomes + [self.PROCURAR])
+        self.menu_camera.set(self._nome_camera(self.indice_camera) if cameras else "Nenhuma câmera")
+
+    def _escolher_camera(self, escolha: str) -> None:
+        if escolha == self.PROCURAR:
+            self.menu_camera.set(self._nome_camera(self.indice_camera))
+            if self.processador is not None:
+                self._mostrar_aviso("Pare a câmera para procurar outras câmeras.")
+                return
+            self._mostrar_aviso("Procurando câmeras...")
+            threading.Thread(target=self._procurar_cameras, name="cameras", daemon=True).start()
+            return
+        if not escolha.startswith("Câmera "):
+            return
+        indice = int(escolha.split()[-1]) - 1
+        if indice == self.indice_camera:
+            return
+        self.indice_camera = indice
+        self._aplicar_preferencia("indice_camera", indice)   # lembra da escolha neste computador
+        if self.processador is not None:   # ligada: desliga e religa na nova
+            self._religar_camera = True
+            self._parar_camera()
+            self._mostrar_aviso(f"Trocando para a {escolha}...")
 
     # --- verificação do ambiente ---------------------------------------------------------
 
@@ -1254,7 +1317,8 @@ class AplicacaoLibras(ctk.CTk):
         self.destroy()
 
 
-def iniciar(indice_camera: int = config.INDICE_CAMERA, tema: str = "dark") -> None:
+def iniciar(indice_camera: int | None = None, tema: str = "dark") -> None:
+    """`indice_camera` None = a câmera escolhida na janela (preferências) ou a do config."""
     if WINDOWS:
         try:  # agrupa a janela com o ícone do Librahin na barra de tarefas (e não com o do Python)
             import ctypes

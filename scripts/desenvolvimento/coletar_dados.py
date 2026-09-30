@@ -25,7 +25,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
-from libras import config, dataset
+from libras import config, dataset, preferencias
 from libras.camera import Camera, ErroCamera
 from libras.desenho import (COR_AVISO, COR_GRAVANDO, COR_OK, COR_TEXTO, descrever_maos,
                             desenhar_barra_progresso, desenhar_borda, desenhar_maos,
@@ -175,6 +175,7 @@ def executar(sinal: str, pessoa: str, meta: int, indice_camera: int) -> None:
 
 
 def main() -> int:
+    preferencias.carregar()  # ex.: a câmera escolhida na janela da aplicação
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--sinal", "--label", dest="sinal", required=True,
                         help=f"sinal a gravar: {', '.join(config.CLASSES_OBRIGATORIAS)} "

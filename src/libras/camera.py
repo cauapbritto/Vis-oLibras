@@ -124,3 +124,21 @@ class Camera:
 
     def __exit__(self, *_exc) -> None:
         self.liberar()
+
+
+def listar_cameras(maximo: int = config.MAX_CAMERAS_PROCURAR) -> list[int]:
+    """Índices das câmeras que abrem e entregam imagem (0, 1, ...). Não chame com a
+    câmera em uso por este programa. No Windows testa só o DirectShow, que responde
+    rápido quando o índice não existe."""
+    encontradas = []
+    for indice in range(maximo):
+        if platform.system() == "Windows":
+            captura = cv2.VideoCapture(indice, cv2.CAP_DSHOW)
+        else:
+            captura = cv2.VideoCapture(indice)
+        try:
+            if captura.isOpened() and captura.read()[0]:
+                encontradas.append(indice)
+        finally:
+            captura.release()
+    return encontradas

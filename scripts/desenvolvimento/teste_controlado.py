@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona
 
 import cv2  # noqa: E402
 
-from libras import config, dataset  # noqa: E402
+from libras import config, dataset, preferencias  # noqa: E402
 from libras.camera import Camera, ErroCamera  # noqa: E402
 from libras.classificador import ErroClassificador, carregar_classificador  # noqa: E402
 from libras.desenho import (COR_AVISO, COR_OK, COR_TEXTO, descrever_maos, desenhar_legenda,  # noqa: E402
@@ -70,6 +70,7 @@ def texto_legenda(sessao: SessaoTeste, agora: float) -> list[tuple[str, tuple, i
 
 
 def main() -> int:
+    preferencias.carregar()  # ex.: a câmera escolhida na janela da aplicação
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--participante", required=True, help="identificação (ex.: ana, p01)")
     parser.add_argument("--sinais", nargs="+", help="sinais a testar (padrão: todos os do modelo)")
