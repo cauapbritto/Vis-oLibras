@@ -466,6 +466,14 @@ class AplicacaoLibras(ctk.CTk):
             ctk.CTkLabel(teclas, text=acao, font=self._f_pequeno, text_color=TEXTO_SECUNDARIO,
                          height=22).pack(side="left", padx=(6, 16))
 
+        # Resposta mais rápida: fala cada palavra assim que ela é confirmada, sem
+        # esperar a frase terminar (a frase inteira continua em "Reproduzir voz").
+        self.var_cada_palavra = ctk.BooleanVar(value=config.FALAR_CADA_PALAVRA)
+        ctk.CTkSwitch(direita, text="Falar cada palavra assim que for reconhecida", variable=self.var_cada_palavra,
+                      command=self._alternar_cada_palavra, font=self._f_pequeno, text_color=TEXTO_SECUNDARIO,
+                      progress_color=DESTAQUE, switch_width=34, switch_height=18).pack(anchor="w", pady=(12, 0))
+        self._alternar_cada_palavra()
+
     def _secao(self, painel, titulo: str | None = None, primeira: bool = False) -> ctk.CTkFrame:
         if not primeira:
             ctk.CTkFrame(painel, height=1, corner_radius=0, fg_color=BORDA).pack(fill="x", padx=16)
@@ -528,7 +536,17 @@ class AplicacaoLibras(ctk.CTk):
             self._estilo_botao_camera()
 
     def _ciclo(self) -> None:
-        """Roda na thread da interface a cada INTERVALO_MS."""
+        """Roda na thread da interface a cada INTERVALO_MS. Um erro inesperado aparece
+        no terminal, mas nunca congela a janela: o próximo ciclo é sempre agendado."""
+        try:
+            self._passo_do_ciclo()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+        finally:
+            self.after(INTERVALO_MS, self._ciclo)
+
+    def _passo_do_ciclo(self) -> None:
         if self._carregando:
             self._verificar_carga()
         if self.processador is not None:
@@ -545,7 +563,6 @@ class AplicacaoLibras(ctk.CTk):
             self._mostrar_aviso(f"Voz: {self.voz.erro}")
         self._atualizar_textos()
         self._atualizar_indicadores()
-        self.after(INTERVALO_MS, self._ciclo)
 
     def _tratar_evento(self, tipo: str, dado) -> None:
         if tipo == "status":
@@ -555,7 +572,7 @@ class AplicacaoLibras(ctk.CTk):
                 self._mostrar_imagem(_tela_vazia("Iniciando a câmera", dado))
         elif tipo == "palavra":
             palavra, _confianca, momento = dado
-            if self.sentenca.adicionar(palavra, momento) and config.FALAR_CADA_PALAVRA:
+            if self.sentenca.adicionar(palavra, momento) and self.var_cada_palavra.get():
                 self.voz.falar(self.sentenca.texto_para_fala(config.rotulo_exibicao(palavra)))
         elif tipo == "erro":
             self.erro_camera = dado
@@ -789,9 +806,14 @@ class AplicacaoLibras(ctk.CTk):
     # --- frase e voz -----------------------------------------------------------------------
 
     def _ao_finalizar(self, frase: str) -> None:
-        """Chamado pelo GerenciadorSentenca quando uma frase é encerrada."""
-        if config.FALAR_AO_FINALIZAR:
+        """Chamado pelo GerenciadorSentenca quando uma frase é encerrada. Se cada palavra
+        já foi falada na hora, a frase não é repetida (fica em "Reproduzir voz")."""
+        if config.FALAR_AO_FINALIZAR and not self.var_cada_palavra.get():
             self._falar(frase)
+
+    def _alternar_cada_palavra(self) -> None:
+        # Falando palavra por palavra, uma nova palavra espera a anterior terminar (em vez de ser ignorada)
+        self.voz.politica = "enfileirar" if self.var_cada_palavra.get() else config.POLITICA_VOZ
 
     def _falar(self, texto: str) -> None:
         if not self.voz.disponivel:

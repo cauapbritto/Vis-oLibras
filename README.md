@@ -121,6 +121,14 @@ letra (ex.: o N de "ANNA"), abaixe a mão rapidamente entre as duas. Muitas letr
 formatos de mão parecidos: confira os pares confundidos na matriz de confusão depois de
 treinar.
 
+**Resposta mais rápida.** Por padrão, a frase é falada quando termina: com o botão/Espaço
+(na hora) ou depois de 2,5 s sem sinais (`PAUSA_FRASE_S`). Ligando a chave **"Falar cada
+palavra assim que for reconhecida"** na janela, cada palavra é falada logo que é confirmada
+(a frase inteira continua disponível em Reproduzir voz). No Windows, a voz fica carregada
+num processo aberto desde o início, então cada fala começa na hora. Para confirmar os
+sinais mais depressa, veja `N_CONSECUTIVAS` e `PASSO_INFERENCIA` na tabela abaixo (mais
+rápido = mais risco de palavras erradas).
+
 **Sem voz?** `python scripts/demonstracao/testar_voz.py` (ou menu → V) testa cada motor de
 voz do sistema, um por vez (no Windows: as vozes do sistema pelo PowerShell/System.Speech,
 que é o padrão, e o pyttsx3). Se só um funcionar, escolha-o em `MOTOR_VOZ` no `config.py`.

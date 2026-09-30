@@ -105,42 +105,94 @@ try {
     if (-not $v) { $v = $vozes | Where-Object { $_.Culture.Name -like 'pt*' } | Select-Object -First 1 }
     if ($v) { $s.SelectVoice($v.Name) }
     $s.Rate = __TAXA__
-    $texto = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__TEXTO__'))
-    if ($texto) { $s.SetOutputToDefaultAudioDevice(); $s.Speak($texto) }
-    [Console]::Out.Write('OK:' + $s.Voice.Name + ' (' + $s.Voice.Culture.Name + ')')
+    $s.SetOutputToDefaultAudioDevice()
+    [Console]::Out.WriteLine('OK:' + $s.Voice.Name + ' (' + $s.Voice.Culture.Name + ')')
 } catch {
-    [Console]::Out.Write('ERRO:' + $_.Exception.Message)
+    [Console]::Out.WriteLine('ERRO:' + $_.Exception.Message)
     exit 1
+}
+[Console]::Out.Flush()
+# Uma fala por linha (texto em base64); responde OK ou ERRO:... quando termina de falar.
+while ($true) {
+    $linha = [Console]::In.ReadLine()
+    if ($linha -eq $null -or $linha -eq 'FIM') { break }
+    try {
+        $texto = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($linha))
+        if ($texto) { $s.Speak($texto) }
+        [Console]::Out.WriteLine('OK')
+    } catch {
+        [Console]::Out.WriteLine('ERRO:' + $_.Exception.Message)
+    }
+    [Console]::Out.Flush()
 }
 """
 
 
 class MotorWindows:
-    """Windows: System.Speech (as mesmas vozes SAPI do sistema), um processo do
-    PowerShell por fala. Não usa COM no programa, então funciona em qualquer thread."""
+    """Windows: System.Speech (as mesmas vozes SAPI do sistema) num processo do
+    PowerShell que fica aberto: a voz é carregada uma vez só e cada fala começa na
+    hora (abrir um PowerShell por fala custava quase 1 s). Não usa COM no programa,
+    então funciona em qualquer thread."""
+
+    TEMPO_INICIO_S = 30
+    TEMPO_FALA_S = 120
 
     def __init__(self, taxa: int = config.TAXA_FALA) -> None:
-        self._powershell = shutil.which("powershell") or shutil.which("pwsh")
-        if not self._powershell:
-            raise ErroVoz("PowerShell não encontrado")
         self._taxa = max(-10, min(10, round((taxa - 170) / 20)))  # SAPI: -10 a 10, 0 = normal
-        self.nome_voz = self._executar("")  # confere se há alguma voz e qual será usada
+        self._respostas: queue.Queue[str | None] = queue.Queue()
+        try:
+            self._processo = subprocess.Popen(
+                self._comando(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        except OSError as erro:
+            raise ErroVoz(f"não foi possível abrir o PowerShell: {erro}") from erro
+        threading.Thread(target=self._ler_respostas, name="voz-windows", daemon=True).start()
+        resposta = self._esperar(self.TEMPO_INICIO_S)
+        if not resposta.startswith("OK:"):
+            self.fechar()
+            raise ErroVoz(f"vozes do Windows (System.Speech): {resposta.removeprefix('ERRO:')}")
+        self.nome_voz = resposta.removeprefix("OK:")
 
-    def _executar(self, texto: str) -> str:
-        script = (_SCRIPT_WINDOWS.replace("__TAXA__", str(self._taxa))
-                  .replace("__TEXTO__", base64.b64encode(texto.encode("utf-8")).decode("ascii")))
-        comando = [self._powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-                   "-EncodedCommand", base64.b64encode(script.encode("utf-16-le")).decode("ascii")]
-        resultado = subprocess.run(comando, capture_output=True, timeout=60,
-                                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-        saida = resultado.stdout.decode(errors="replace").strip()
-        if resultado.returncode != 0 or not saida.startswith("OK:"):
-            detalhe = saida.removeprefix("ERRO:") or f"código {resultado.returncode}"
-            raise ErroVoz(f"vozes do Windows (System.Speech): {detalhe}")
-        return saida.removeprefix("OK:")
+    def _comando(self) -> list[str]:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            raise ErroVoz("PowerShell não encontrado")
+        script = _SCRIPT_WINDOWS.replace("__TAXA__", str(self._taxa))
+        return [powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                "-EncodedCommand", base64.b64encode(script.encode("utf-16-le")).decode("ascii")]
+
+    def _ler_respostas(self) -> None:
+        for linha in self._processo.stdout:
+            self._respostas.put(linha.decode(errors="replace").strip())
+        self._respostas.put(None)  # o processo terminou
+
+    def _esperar(self, tempo_s: float) -> str:
+        try:
+            resposta = self._respostas.get(timeout=tempo_s)
+        except queue.Empty:
+            self.fechar()
+            raise ErroVoz("as vozes do Windows não responderam") from None
+        if resposta is None:
+            raise ErroVoz("o processo de voz do Windows terminou")
+        return resposta
 
     def falar_bloqueante(self, texto: str) -> None:
-        self._executar(texto)
+        try:
+            self._processo.stdin.write(base64.b64encode(texto.encode("utf-8")) + b"\n")
+            self._processo.stdin.flush()
+        except OSError as erro:
+            raise ErroVoz(f"o processo de voz do Windows parou: {erro}") from erro
+        resposta = self._esperar(self.TEMPO_FALA_S)
+        if resposta != "OK":
+            raise ErroVoz(f"vozes do Windows: {resposta.removeprefix('ERRO:')}")
+
+    def fechar(self) -> None:
+        try:
+            self._processo.stdin.write(b"FIM\n")
+            self._processo.stdin.close()
+            self._processo.wait(timeout=2)
+        except Exception:
+            self._processo.kill()
 
 
 class MotorComando:
@@ -276,6 +328,7 @@ class Voz:
         while True:
             texto = self._fila.get()
             if texto is None:
+                _fechar_motor(motor)
                 break
             try:
                 if motor is None:
@@ -284,12 +337,14 @@ class Voz:
                     motor.falar_bloqueante(texto)
             except Exception as erro:  # erro do sistema de áudio durante a fala
                 self._registrar_erro(f"erro ao falar: {erro}")
+                _fechar_motor(motor)
                 motor = None  # recria na próxima fala
             finally:
                 recriar = self.recriar_motor_por_fala
                 if recriar is None:
                     recriar = getattr(motor, "recriar_por_fala", False)
                 if recriar:
+                    _fechar_motor(motor)
                     motor = None  # o próximo pedido cria um motor novo
                 if self._fila.empty():
                     self._falando.clear()
@@ -301,6 +356,16 @@ class Voz:
                 self.ao_erro(mensagem)
             except Exception:
                 pass
+
+
+def _fechar_motor(motor) -> None:
+    """Motores com processo próprio (MotorWindows) são encerrados; os outros, ignorados."""
+    fechar = getattr(motor, "fechar", None)
+    if fechar is not None:
+        try:
+            fechar()
+        except Exception:
+            pass
 
 
 _voz_padrao: Voz | None = None

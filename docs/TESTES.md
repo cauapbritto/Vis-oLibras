@@ -92,6 +92,7 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 - [ ] Iniciar/parar 3 vezes seguidas sem travar
 - [ ] Remover última palavra, Limpar frase e Finalizar frase funcionam (e os atalhos Backspace, C, Espaço)
 - [ ] "Sinal detectado", "Último sinal confirmado", "Frase em construção" e "Frase final" mudam como esperado
+- [ ] Com "Falar cada palavra" ligado, cada palavra é falada logo que aparece; desligado, a frase é falada ao finalizar
 - [ ] Medidor de confiança azul acima de 75% e amarelo abaixo, com o texto "Acima/Abaixo do limite"
 - [ ] Uma frase cadastrada no `frases.txt` (ex.: BOM DIA) aparece em português na prévia e na frase final, com "Sinais: ..." embaixo, e é falada em português
 - [ ] Uma sequência sem frase cadastrada continua aparecendo como glosa

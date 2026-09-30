@@ -112,41 +112,63 @@ def test_motor_que_pede_recriar_e_criado_de_novo_a_cada_fala():
     assert [m.falas for m in criados] == [["um"], ["dois"]]
 
 
-class _Resultado:
-    def __init__(self, saida, codigo=0):
-        self.stdout, self.returncode = saida.encode(), codigo
+# Processo falso que segue o mesmo protocolo do script do PowerShell: responde
+# "OK:<voz>" ao abrir e "OK" (ou "ERRO:...") a cada linha em base64; grava os
+# textos recebidos num arquivo, para o teste conferir.
+_VOZ_FALSA = r"""
+import base64, sys
+registro = open(sys.argv[1], "a", encoding="utf-8")
+if sys.argv[2] == "sem-voz":
+    print("ERRO:nenhuma voz instalada no Windows", flush=True)
+    sys.exit(1)
+print("OK:Microsoft Maria (pt-BR)", flush=True)
+for linha in sys.stdin:
+    linha = linha.strip()
+    if linha == "FIM":
+        break
+    texto = base64.b64decode(linha).decode("utf-8")
+    registro.write(texto + "\n"); registro.flush()
+    print("ERRO:falha simulada" if texto == "quebra" else "OK", flush=True)
+"""
 
 
-def test_motor_windows_le_a_voz_e_os_erros(monkeypatch):
-    chamadas = []
-    monkeypatch.setattr(modulo_voz.shutil, "which", lambda nome: "powershell")
-    monkeypatch.setattr(modulo_voz.subprocess, "run",
-                        lambda comando, **_: chamadas.append(comando) or _Resultado("OK:Microsoft Maria (pt-BR)"))
-    motor = modulo_voz.MotorWindows()
+def _motor_falso(tmp_path, modo="normal"):
+    import sys
+
+    class MotorFalsoWindows(modulo_voz.MotorWindows):
+        def _comando(self):
+            return [sys.executable, "-c", _VOZ_FALSA, str(tmp_path / "falas.txt"), modo]
+    return MotorFalsoWindows
+
+
+def test_motor_windows_fica_aberto_entre_as_falas(tmp_path):
+    motor = _motor_falso(tmp_path)()
     assert motor.nome_voz == "Microsoft Maria (pt-BR)"
-    motor.falar_bloqueante("não")
-    assert len(chamadas) == 2 and "-EncodedCommand" in chamadas[-1]
+    processo = motor._processo
+    motor.falar_bloqueante("eu não sei, 'obrigado'")    # acentos e aspas chegam inteiros
+    motor.falar_bloqueante("segunda fala")
+    assert motor._processo is processo and processo.poll() is None   # o mesmo processo
+    with pytest.raises(ErroVoz, match="falha simulada"):
+        motor.falar_bloqueante("quebra")
+    motor.falar_bloqueante("depois do erro")
+    motor.fechar()
+    assert processo.wait(timeout=5) is not None
+    falas = (tmp_path / "falas.txt").read_text(encoding="utf-8").splitlines()
+    assert falas == ["eu não sei, 'obrigado'", "segunda fala", "quebra", "depois do erro"]
 
-    monkeypatch.setattr(modulo_voz.subprocess, "run",
-                        lambda comando, **_: _Resultado("ERRO:nenhuma voz instalada no Windows", 1))
+
+def test_motor_windows_sem_voz_instalada(tmp_path):
     with pytest.raises(ErroVoz, match="nenhuma voz instalada"):
-        modulo_voz.MotorWindows()
+        _motor_falso(tmp_path, "sem-voz")()
 
 
-def test_texto_com_acento_chega_inteiro_ao_script_do_windows(monkeypatch):
-    import base64
-    import re
-    scripts = []
-
-    def rodar(comando, **_):
-        scripts.append(base64.b64decode(comando[-1]).decode("utf-16-le"))
-        return _Resultado("OK:voz")
-
-    monkeypatch.setattr(modulo_voz.shutil, "which", lambda nome: "powershell")
-    monkeypatch.setattr(modulo_voz.subprocess, "run", rodar)
-    modulo_voz.MotorWindows().falar_bloqueante("eu não sei, 'obrigado'")
-    texto = re.search(r"FromBase64String\('([^']*)'\)", scripts[-1]).group(1)
-    assert base64.b64decode(texto).decode("utf-8") == "eu não sei, 'obrigado'"
+def test_voz_encerra_o_processo_do_motor(tmp_path):
+    motor = _motor_falso(tmp_path)()
+    voz = Voz(criar_motor=lambda: motor)
+    assert voz.falar("oi")
+    _esperar(voz, limite=5)
+    voz.encerrar(timeout=5)
+    assert motor._processo.wait(timeout=5) is not None
 
 
 def test_politica_invalida():
