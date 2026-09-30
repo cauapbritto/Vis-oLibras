@@ -39,6 +39,9 @@ ARQ_POSE_LANDMARKER = DIR_MODELOS / "pose_landmarker_lite.task"
 # Tabela de frases (sinais -> português), editável no Bloco de Notas.
 ARQ_FRASES = RAIZ_PROJETO / "frases.txt"
 
+# Preferências mudadas na janela Configurações (cada computador tem o seu; fora do Git)
+ARQ_PREFERENCIAS = RAIZ_PROJETO / "preferencias.json"
+
 # Ícone do aplicativo (gerado por scripts/desenvolvimento/gerar_icone.py)
 DIR_RECURSOS = Path(__file__).resolve().parent / "recursos"
 ARQ_ICONE_PNG = DIR_RECURSOS / "icone.png"
@@ -268,6 +271,15 @@ DURACAO_MINIMA_JANELA = 1.2       # só classifica com pelo menos isso no buffer
 PASSO_INFERENCIA = 5              # classifica a cada N frames
 MIN_PCT_MAOS_JANELA = 0.5         # abaixo disso a janela é tratada como _NADA
 
+# Modo leve (notebooks fracos): detecta os ombros só 1 a cada LEVE_POSE_A_CADA
+# quadros (eles quase não se movem) e manda ao MediaPipe uma imagem reduzida.
+# Os pontos saem normalizados, então as features e o modelo não mudam.
+MODO_LEVE = "auto"          # "auto" (liga se o FPS ficar baixo), "ligado" ou "desligado"
+FPS_MINIMO_MODO_LEVE = 15   # no automático, liga se o FPS ficar abaixo disso...
+SEGUNDOS_FPS_BAIXO = 3.0    # ...por este tempo seguido
+LEVE_POSE_A_CADA = 3
+LEVE_ESCALA = 0.75
+
 # Estabilizador (anti-repetição). Uma palavra só é aceita quando:
 #   1. a confiança da previsão é >= LIMIAR_CONFIANCA;
 #   2. o mesmo sinal aparece em N_CONSECUTIVAS previsões seguidas;
@@ -282,6 +294,21 @@ N_CONSECUTIVAS = 3
 COOLDOWN_S = 1.0
 COOLDOWN_MESMO_SINAL_S = 2.0
 EXIGIR_LIBERACAO = True
+
+# Confirmação adaptativa: quando TODAS as previsões seguidas têm confiança muito
+# alta (>= LIMIAR_CONFIRMACAO_RAPIDA), bastam N_CONSECUTIVAS_RAPIDA para aceitar;
+# com confiança duvidosa, continua exigindo N_CONSECUTIVAS.
+CONFIRMACAO_ADAPTATIVA = True
+LIMIAR_CONFIRMACAO_RAPIDA = 0.90
+N_CONSECUTIVAS_RAPIDA = 2
+
+# Gatilho de fim de movimento: quando as mãos se mexem e depois param, o sinal
+# provavelmente terminou e está inteiro na janela; o modelo é chamado na hora,
+# sem esperar o próximo PASSO_INFERENCIA. Velocidades do punho em larguras de
+# ombro por segundo (não depende da distância da câmera).
+GATILHO_FIM_MOVIMENTO = True
+VELOCIDADE_MOVIMENTO = 0.8   # acima disso, as mãos estão fazendo um sinal
+VELOCIDADE_PARADA = 0.3      # abaixo disso (depois de se mexer), o sinal terminou
 
 # =============================================================================
 # Formação de frases

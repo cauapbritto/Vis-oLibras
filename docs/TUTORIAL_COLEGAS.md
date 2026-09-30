@@ -68,6 +68,7 @@ na pasta do projeto). Aparece o menu:
      7  Analisar o dataset
      8  Treinar o modelo
      9  Teste controlado (métricas do trabalho)
+     B  Fazer backup (gravações, modelo e testes) para o Drive
 
      C  Créditos
      0  Sair
@@ -198,6 +199,15 @@ e os **sinais confundidos** (matriz em `reports\matriz_confusao.png`).
 
   O arquivo fica em `dist\Librahin-demo.zip`. No computador da apresentação: extrair,
   dois cliques em `INSTALAR.bat` e depois no atalho **Librahin** → opção 1.
+
+### B3b. Backup no Drive do grupo (opção B)
+
+As gravações são o que dá mais trabalho para refazer. Depois de juntar gravações ou
+treinar, escolha a **opção B**: ela cria `backups\librahin_backup_<data>.zip` (gravações,
+modelo treinado, resultados dos testes e tabela de frases), abre a pasta com o arquivo e
+abre a pasta do Drive do grupo no navegador: é só arrastar o zip para lá. Na primeira vez,
+o menu pede o link da pasta do Drive e guarda só neste computador (não vai para o GitHub).
+Para restaurar: extraia o zip **dentro** da pasta do projeto.
 
 ### B4. Resumo das métricas dos testes controlados
 

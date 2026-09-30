@@ -24,7 +24,7 @@ import cv2
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
-from libras import config
+from libras import config, preferencias
 from libras.camera import Camera, ErroCamera
 from libras.classificador import ErroClassificador, carregar_classificador
 from libras.desenho import (COR_AVISO, COR_OK, COR_TEXTO, descrever_maos, desenhar_barra,
@@ -97,7 +97,7 @@ def executar(args) -> None:
         print(f"Tabela de frases: {len(tabela)} frases ({config.ARQ_FRASES.name})")
         for aviso in tabela.avisos:
             print(f"  [AVISO] {aviso}")
-    sentenca = GerenciadorSentenca(ao_finalizar=ao_finalizar, tabela=tabela)
+    sentenca = GerenciadorSentenca(ao_finalizar=ao_finalizar, tabela=tabela, pausa_s=config.PAUSA_FRASE_S)
     aceita = None  # (palavra, momento) para o destaque na tela
 
     print(f"Modelo: {classificador.info.get('descricao')} | classes: {', '.join(classificador.classes)}")
@@ -161,6 +161,8 @@ def executar(args) -> None:
 
 
 def main() -> int:
+    for aviso in preferencias.carregar():   # as mesmas configurações da janela (preferencias.json)
+        print(f"[AVISO] preferências: {aviso}")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--camera", type=int, default=config.INDICE_CAMERA, help="índice da webcam")
     grupo = parser.add_argument_group("estabilização (padrões do config.py)")

@@ -75,6 +75,51 @@ function Expandir-Escolha([string]$escolha) {
     return @($lista | Select-Object -Unique)
 }
 
+function Fazer-Backup {
+    # Zip com o que dá trabalho refazer: gravações, modelo treinado, testes e tabela de frases.
+    $data = Get-Date -Format "yyyy-MM-dd_HHmm"
+    $pasta = Join-Path $Raiz "backups"
+    New-Item -ItemType Directory -Force -Path $pasta | Out-Null
+    $temp = Join-Path ([IO.Path]::GetTempPath()) "librahin_backup_$data"
+    Remove-Item $temp -Recurse -Force -ErrorAction SilentlyContinue
+    $itens = @(
+        @{ De = "data\raw"; Para = "data\raw" }, @{ De = "data\metadata.csv"; Para = "data" },
+        @{ De = "models"; Para = "models" }, @{ De = "reports\testes"; Para = "reports\testes" },
+        @{ De = "frases.txt"; Para = "." }
+    )
+    foreach ($item in $itens) {
+        $origem = Join-Path $Raiz $item.De
+        if (-not (Test-Path $origem)) { continue }
+        $destino = Join-Path $temp $item.Para
+        New-Item -ItemType Directory -Force -Path $destino | Out-Null
+        if (Test-Path $origem -PathType Container) {
+            # modelos do MediaPipe (.task) são baixados de novo sozinhos: ficam de fora
+            Get-ChildItem $origem -Force | Where-Object { $_.Extension -ne ".task" } |
+                Copy-Item -Destination $destino -Recurse -Force
+        } else {
+            Copy-Item $origem $destino -Force
+        }
+    }
+    $gravacoes = @(Get-ChildItem (Join-Path $temp "data\raw") -Recurse -Filter *.npy -ErrorAction SilentlyContinue).Count
+    $zip = Join-Path $pasta "librahin_backup_$data.zip"
+    Compress-Archive -Path (Join-Path $temp "*") -DestinationPath $zip -Force
+    Remove-Item $temp -Recurse -Force
+    Ok "Backup criado: $zip ($gravacoes gravações, $([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB)"
+    Write-Host "   Para restaurar: extraia o zip DENTRO da pasta do projeto."
+
+    $arquivoLink = Join-Path $Raiz "backup_drive.txt"   # fica só neste computador (fora do GitHub)
+    $link = if (Test-Path $arquivoLink) { (Get-Content $arquivoLink -Raw).Trim() } else { "" }
+    if (-not $link) {
+        $link = "$(Read-Host "Cole o link da pasta do Google Drive do grupo (Enter para pular)")".Trim()
+        if ($link) { Set-Content -Path $arquivoLink -Value $link -Encoding UTF8 }
+    }
+    if ($NoWindows) { Start-Process explorer.exe "/select,`"$zip`"" }
+    if ($link -match "^https://") {
+        Write-Host "   Abrindo a pasta do Drive: arraste o arquivo do backup para ela."
+        if ($NoWindows) { Start-Process $link }
+    }
+}
+
 function Contar-Gravacoes {
     $pasta = Join-Path $Raiz "data/raw"
     $grupos = Get-ChildItem $pasta -Recurse -Filter *.npy -ErrorAction SilentlyContinue |
@@ -170,6 +215,7 @@ while ($true) {
         Write-Host "     7  Analisar o dataset"
         Write-Host "     8  Treinar o modelo"
         Write-Host "     9  Teste controlado (métricas do trabalho)"
+        Write-Host "     B  Fazer backup (gravações, modelo e testes) para o Drive"
     } else {
         Write-Host "     2  Versão simples (janela do OpenCV)"
     }
@@ -196,6 +242,7 @@ while ($true) {
         "v" { Rodar @("scripts/demonstracao/testar_voz.py") }
         "f" { Conferir-Frases }
         "c" { Mostrar-Creditos }
+        "b" { Fazer-Backup }
         "0" { exit 0 }
         default { Aviso "Opção inválida." }
     }

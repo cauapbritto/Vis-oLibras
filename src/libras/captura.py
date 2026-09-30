@@ -45,6 +45,7 @@ class ProcessadorCamera(threading.Thread):
         self._trava = threading.Lock()
         self._quadro: QuadroProcessado | None = None
         self._eventos: queue.Queue = queue.Queue()
+        self.pipeline: PipelineVisao | None = None  # para a interface ajustar o modo leve ao vivo
 
     # --- chamados pela thread da interface --------------------------------------
 
@@ -78,6 +79,7 @@ class ProcessadorCamera(threading.Thread):
             camera.abrir()
             self._eventos.put(("status", "Carregando o MediaPipe..."))
             pipeline = PipelineVisao(self.classificador, self.estabilizador)
+            self.pipeline = pipeline
             self._eventos.put(("status", "ok"))
             while not self._parar.is_set():
                 frame = camera.ler()

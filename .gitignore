@@ -39,3 +39,8 @@ tests/.cache/
 # Instalador de um clique (Windows): log e gravações para enviar
 instalar.log
 gravacoes_*.zip
+
+# Preferências da janela Configurações e link do Drive do backup (de cada computador)
+preferencias.json
+backup_drive.txt
+backups/

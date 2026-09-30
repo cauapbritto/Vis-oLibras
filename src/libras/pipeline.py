@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from libras import config
 from libras.classificador import Classificador
 from libras.desenho import desenhar_maos, desenhar_pose
 from libras.estabilizador import Estabilizador
@@ -27,6 +28,7 @@ class QuadroProcessado:
     estado: EstadoReconhecimento = field(default_factory=EstadoReconhecimento)
     fps: float = 0.0
     momento: float = 0.0               # time.perf_counter() do frame
+    leve: bool = False                 # modo leve ativo neste frame
 
 
 class PipelineVisao:
@@ -42,6 +44,9 @@ class PipelineVisao:
             argumentos = {} if passo_inferencia is None else {"passo_inferencia": passo_inferencia}
             self.reconhecedor = Reconhecedor(classificador, estabilizador, **argumentos)
         self._fps = ContadorFPS()
+        self.modo_leve = config.MODO_LEVE
+        self.extrator.leve = self.modo_leve == "ligado"
+        self._fps_baixo_desde: float | None = None
 
     def processar(self, frame: np.ndarray, agora: float | None = None) -> QuadroProcessado:
         agora = time.perf_counter() if agora is None else agora
@@ -51,7 +56,21 @@ class PipelineVisao:
             estado = self.reconhecedor.processar(para_linha_bruta(resultado, agora), agora)
         desenhar_pose(frame, resultado)
         desenhar_maos(frame, resultado)
-        return QuadroProcessado(frame, resultado, estado, self._fps.atualizar(agora), agora)
+        fps = self._fps.atualizar(agora)
+        self._ajustar_modo_leve(fps, agora)
+        return QuadroProcessado(frame, resultado, estado, fps, agora, self.extrator.leve)
+
+    def _ajustar_modo_leve(self, fps: float, agora: float) -> None:
+        """No automático, liga o modo leve se o FPS ficar baixo por um tempo seguido
+        (e não desliga sozinho, para não ficar alternando)."""
+        if self.modo_leve != "auto" or self.extrator.leve or fps <= 0:
+            return
+        if fps >= config.FPS_MINIMO_MODO_LEVE:
+            self._fps_baixo_desde = None
+        elif self._fps_baixo_desde is None:
+            self._fps_baixo_desde = agora
+        elif agora - self._fps_baixo_desde >= config.SEGUNDOS_FPS_BAIXO:
+            self.extrator.leve = True
 
     def reiniciar_estabilizador(self) -> None:
         """Esquece a última palavra aceita (e o cooldown), mas mantém a janela de

@@ -84,6 +84,12 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 - [ ] Sem alto-falante/áudio: a interface continua funcionando
 
 ### Interface
+- [ ] Na primeira vez que a câmera liga, aparece a verificação do ambiente com dicas; "Verificar de novo" funciona
+- [ ] Configurações: mudar confiança, pausa e velocidade da voz vale na hora e continua ao abrir de novo; "Restaurar padrão" volta tudo
+- [ ] Histórico mostra as frases finalizadas; "Copiar" cola o texto em outro programa
+- [ ] Apresentação (F11) abre em tela cheia com a câmera e a legenda; Esc sai; Espaço finaliza a frase
+- [ ] Com "Falar cada palavra", "MEU NOME C A U A" fala as palavras e depois "Meu nome é Caua"
+- [ ] Menu → B cria o zip em `backups\` e abre a pasta do Drive
 - [ ] Ao abrir, a janela aparece logo com "Carregando" e o botão Iniciar câmera é liberado em poucos segundos
 - [ ] Ícone do Librahin (mão azul) na janela, na barra de tarefas e no atalho da Área de Trabalho
 - [ ] Iniciar câmera → imagem com landmarks; Parar câmera → volta a "Câmera desligada"

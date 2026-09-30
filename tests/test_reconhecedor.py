@@ -134,3 +134,49 @@ def test_tempo_real_diferencia_aceno_de_mao_parada_no_mesmo_lugar():
     aceitas = [e.palavra for l in stream
                if (e := reconhecedor.processar(l, float(l[config.COL_TIMESTAMP]))).palavra]
     assert aceitas == ["OI", "NOME"]
+
+
+class _ContaInferencias:
+    """Classificador falso que só conta quando foi chamado (e em qual frame)."""
+    versao_features = config.VERSAO_FEATURES
+
+    def __init__(self):
+        self.frames = []
+        self.frame_atual = 0
+
+    def prever(self, vetor):
+        self.frames.append(self.frame_atual)
+        return config.CLASSE_NADA, 1.0
+
+
+def _mao_que_se_mexe_e_para(n_movendo=45, n_parada=30):
+    """Mão atravessando a imagem (sinal) e depois parada."""
+    linhas, t = [], 0.0
+    for i in range(n_movendo + n_parada):
+        x = 0.4 + 0.4 * min(i, n_movendo) / n_movendo
+        linhas.append(linha(t, direita=mao((x, 0.6))))
+        t += 1 / FPS
+    return linhas
+
+
+def test_mao_parando_chama_o_modelo_na_hora():
+    falso = _ContaInferencias()
+    reconhecedor = Reconhecedor(falso, passo_inferencia=100)   # passo enorme: só o gatilho chama
+    for i, l in enumerate(_mao_que_se_mexe_e_para()):
+        falso.frame_atual = i
+        reconhecedor.processar(l, float(l[config.COL_TIMESTAMP]))
+    assert len(falso.frames) == 1
+    assert 45 <= falso.frames[0] <= 52          # logo depois que a mão parou (frame 45)
+
+
+def test_gatilho_desligado_e_mao_parada_nao_disparam():
+    falso = _ContaInferencias()
+    reconhecedor = Reconhecedor(falso, passo_inferencia=100)
+    reconhecedor.gatilho_fim_movimento = False
+    for l in _mao_que_se_mexe_e_para():
+        reconhecedor.processar(l, float(l[config.COL_TIMESTAMP]))
+    assert falso.frames == []
+    parado = Reconhecedor(falso, passo_inferencia=100)           # mão sempre parada: nada
+    for l in _stream([("SIM", 3.0)]):
+        parado.processar(l, float(l[config.COL_TIMESTAMP]))
+    assert falso.frames == []

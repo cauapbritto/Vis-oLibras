@@ -32,12 +32,14 @@ import cv2
 from PIL import Image, ImageDraw
 
 import libras
-from libras import config
+from libras import config, preferencias
 from libras.classificador import ErroClassificador, carregar_classificador
 from libras.desenho import descrever_maos, fonte_com_acentos, icone_mao
 from libras.estabilizador import Estabilizador
 from libras.frase import GerenciadorSentenca
 from libras.traducao import carregar_tabela_padrao
+from libras.verificacao import DURACAO_S as DURACAO_VERIFICACAO_S
+from libras.verificacao import VerificacaoAmbiente, brilho_medio, largura_ombros
 from libras.voz import Voz
 
 WINDOWS = sys.platform.startswith("win")
@@ -76,6 +78,11 @@ TEXTOS_VAZIOS = {
                   "Clique em Iniciar câmera. Fique a cerca de 1 metro, com os ombros e as mãos visíveis."),
     "iniciando": ("Iniciando a câmera", "Abrindo a câmera..."),
 }
+
+
+def _som(texto: str) -> str:
+    """Como o texto soa: sem maiúsculas, pontuação nem hífens ("Sim." e "SIM" soam igual)."""
+    return " ".join("".join(c for c in texto.lower() if c.isalnum() or c.isspace()).split())
 
 
 def _fonte(tamanho: int, forte: bool = False) -> ctk.CTkFont:
@@ -163,6 +170,10 @@ class Medidor(ctk.CTkFrame):
             self._valor, self._aceito = valor, aceito
             self._desenhar()
 
+    def definir_limite(self, limite: float) -> None:
+        self._limite = limite
+        self._desenhar()
+
     def _set_appearance_mode(self, modo) -> None:
         super()._set_appearance_mode(modo)
         self._desenhar()
@@ -211,6 +222,271 @@ class Indicador(ctk.CTkFrame):
             self._texto.configure(text=texto)
 
 
+def _janela_auxiliar(app, titulo: str) -> ctk.CTkToplevel:
+    """Janela secundária com o visual da aplicação (ícone, cor, fecha com Esc)."""
+    janela = ctk.CTkToplevel(app)
+    janela.title(titulo)
+    janela.configure(fg_color=SUPERFICIE)
+    janela.transient(app)
+    app._definir_icone(janela)
+    janela.bind("<Escape>", lambda _e: janela.destroy())
+    return janela
+
+
+def _centralizar(app, janela) -> None:
+    janela.update_idletasks()
+    x = app.winfo_rootx() + (app.winfo_width() - janela.winfo_reqwidth()) // 2
+    y = app.winfo_rooty() + (app.winfo_height() - janela.winfo_reqheight()) // 3
+    janela.wm_geometry(f"+{max(0, x)}+{max(0, y)}")
+    janela.after(60, lambda: AplicacaoLibras._focar_janela(janela))
+
+
+def _titulo_secao(master, texto: str, fonte) -> None:
+    ctk.CTkLabel(master, text=texto, font=fonte, text_color=TEXTO, anchor="w").pack(fill="x", pady=(16, 4))
+
+
+class JanelaConfiguracoes:
+    """Configurações salvas neste computador (preferencias.json), aplicadas na hora."""
+
+    def __init__(self, app: "AplicacaoLibras") -> None:
+        self.app = app
+        self._agendados: dict = {}
+        v = preferencias.valores()
+        j = self.janela = _janela_auxiliar(app, "Configurações")
+        j.resizable(False, False)
+        corpo = ctk.CTkFrame(j, fg_color="transparent")
+        corpo.pack(padx=26, pady=(12, 20), fill="both")
+        f_secao, f_texto, f_peq = _fonte(15, forte=True), app._f_texto, app._f_pequeno
+
+        _titulo_secao(corpo, "Reconhecimento", f_secao)
+        self._slider(corpo, "Confiança mínima para confirmar um sinal", "limiar_confianca", 0.5, 0.95, 9,
+                     v["limiar_confianca"], lambda x: f"{x:.0%}")
+        self._chave(corpo, f"Confirmação rápida quando a confiança passa de {config.LIMIAR_CONFIRMACAO_RAPIDA:.0%}",
+                    "confirmacao_adaptativa", v["confirmacao_adaptativa"])
+        ctk.CTkLabel(corpo, text="Modo leve (para computadores lentos)", font=f_texto, text_color=TEXTO,
+                     anchor="w").pack(fill="x", pady=(10, 4))
+        opcoes = {"Automático": "auto", "Ligado": "ligado", "Desligado": "desligado"}
+        leve = ctk.CTkSegmentedButton(corpo, values=list(opcoes), font=f_peq, selected_color=DESTAQUE,
+                                      selected_hover_color=DESTAQUE_HOVER,
+                                      command=lambda rotulo: app._aplicar_preferencia("modo_leve", opcoes[rotulo]))
+        leve.set(next(r for r, valor in opcoes.items() if valor == v["modo_leve"]))
+        leve.pack(anchor="w")
+
+        _titulo_secao(corpo, "Frase", f_secao)
+        self._chave(corpo, "Encerrar a frase sozinho depois de uma pausa", "finalizar_por_pausa",
+                    v["finalizar_por_pausa"])
+        self._slider(corpo, "Pausa para encerrar a frase", "pausa_frase_s", 1.0, 6.0, 10, v["pausa_frase_s"],
+                     lambda x: f"{x:.1f} s".replace(".", ","))
+
+        _titulo_secao(corpo, "Voz", f_secao)
+        self._slider(corpo, "Velocidade da voz", "taxa_fala", 100, 260, 16, v["taxa_fala"],
+                     lambda x: "lenta" if x < 150 else "normal" if x <= 190 else "rápida", inteiro=True)
+        self._chave(corpo, "Falar cada palavra assim que for reconhecida", "falar_cada_palavra",
+                    v["falar_cada_palavra"])
+        linha = ctk.CTkFrame(corpo, fg_color="transparent")
+        linha.pack(fill="x", pady=(10, 0))
+        app._botao_secundario(linha, "Testar voz", lambda: app._falar("Olá, eu sou o Librahin.")).pack(side="left")
+        app._botao_secundario(linha, "Verificar ambiente", self._verificar).pack(side="left", padx=(8, 0))
+
+        ctk.CTkFrame(corpo, height=1, corner_radius=0, fg_color=BORDA).pack(fill="x", pady=(18, 12))
+        ctk.CTkLabel(corpo, text="As mudanças valem na hora e ficam salvas neste computador.", font=f_peq,
+                     text_color=TEXTO_SECUNDARIO, anchor="w").pack(fill="x")
+        rodape = ctk.CTkFrame(corpo, fg_color="transparent")
+        rodape.pack(fill="x", pady=(12, 0))
+        app._botao_secundario(rodape, "Restaurar padrão", self._restaurar).pack(side="left")
+        app._botao_primario(rodape, "Fechar", j.destroy).pack(side="right")
+        _centralizar(app, j)
+
+    def _chave(self, master, texto, nome, valor) -> None:
+        variavel = ctk.BooleanVar(value=valor)
+        ctk.CTkSwitch(master, text=texto, variable=variavel, font=self.app._f_texto, text_color=TEXTO,
+                      progress_color=DESTAQUE, switch_width=34, switch_height=18,
+                      command=lambda: self.app._aplicar_preferencia(nome, variavel.get())).pack(anchor="w", pady=4)
+
+    def _slider(self, master, texto, nome, minimo, maximo, passos, valor, formato, inteiro=False) -> None:
+        cabecalho = ctk.CTkFrame(master, fg_color="transparent")
+        cabecalho.pack(fill="x", pady=(8, 0))
+        ctk.CTkLabel(cabecalho, text=texto, font=self.app._f_texto, text_color=TEXTO).pack(side="left")
+        rotulo = ctk.CTkLabel(cabecalho, text=formato(valor), font=self.app._f_texto, text_color=TEXTO_SECUNDARIO)
+        rotulo.pack(side="right")
+
+        def mudou(x):
+            x = int(round(x)) if inteiro else round(float(x), 2)
+            rotulo.configure(text=formato(x))
+            # espera a pessoa soltar o controle (a voz, por exemplo, é recarregada a cada mudança)
+            if nome in self._agendados:
+                self.janela.after_cancel(self._agendados[nome])
+            self._agendados[nome] = self.janela.after(350, lambda: self.app._aplicar_preferencia(nome, x))
+
+        slider = ctk.CTkSlider(master, from_=minimo, to=maximo, number_of_steps=passos, command=mudou,
+                               progress_color=DESTAQUE, button_color=DESTAQUE, button_hover_color=DESTAQUE_HOVER,
+                               width=400)
+        slider.set(valor)
+        slider.pack(anchor="w", pady=(4, 2))
+
+    def _verificar(self) -> None:
+        if self.app.estado_camera != "ligada":
+            self.app._mostrar_aviso("Ligue a câmera para verificar o ambiente.")
+            return
+        self.janela.destroy()
+        self.app._iniciar_verificacao()
+
+    def _restaurar(self) -> None:
+        preferencias.restaurar_padrao()
+        for nome, valor in preferencias.valores().items():
+            self.app._aplicar_preferencia(nome, valor, salvar=False)
+        self.janela.destroy()
+        self.app._abrir_configuracoes()
+
+
+class JanelaHistorico:
+    """Frases finalizadas nesta sessão, da mais recente para a mais antiga, com copiar."""
+
+    def __init__(self, app: "AplicacaoLibras") -> None:
+        self.app = app
+        j = self.janela = _janela_auxiliar(app, "Histórico de frases")
+        j.geometry("560x480")
+        self.lista = ctk.CTkScrollableFrame(j, fg_color=SUPERFICIE)
+        self.lista.pack(fill="both", expand=True, padx=16, pady=(16, 8))
+        rodape = ctk.CTkFrame(j, fg_color="transparent")
+        rodape.pack(fill="x", padx=16, pady=(0, 16))
+        app._botao_secundario(rodape, "Copiar tudo", self._copiar_tudo).pack(side="left")
+        app._botao_secundario(rodape, "Limpar histórico", self._limpar).pack(side="left", padx=(8, 0))
+        app._botao_primario(rodape, "Fechar", j.destroy).pack(side="right")
+        self.atualizar()
+        _centralizar(app, j)
+
+    def atualizar(self) -> None:
+        for filho in self.lista.winfo_children():
+            filho.destroy()
+        if not self.app.historico:
+            ctk.CTkLabel(self.lista, text="Nenhuma frase ainda. As frases finalizadas aparecem aqui.",
+                         font=self.app._f_texto, text_color=TEXTO_APAGADO).pack(anchor="w", pady=8)
+            return
+        for hora, frase, glosa in reversed(self.app.historico):
+            linha = ctk.CTkFrame(self.lista, fg_color="transparent")
+            linha.pack(fill="x", pady=(0, 10))
+            textos = ctk.CTkFrame(linha, fg_color="transparent")
+            textos.pack(side="left", fill="x", expand=True)
+            ctk.CTkLabel(textos, text=hora, font=self.app._f_pequeno, text_color=TEXTO_SECUNDARIO,
+                         height=16, anchor="w").pack(fill="x")
+            ctk.CTkLabel(textos, text=frase, font=_fonte(15, forte=True), text_color=TEXTO, wraplength=380,
+                         justify="left", anchor="w").pack(fill="x")
+            if glosa != frase:
+                ctk.CTkLabel(textos, text=f"Sinais: {glosa}", font=self.app._f_pequeno,
+                             text_color=TEXTO_SECUNDARIO, height=16, anchor="w").pack(fill="x")
+            self.app._botao_secundario(linha, "Copiar", lambda t=frase: self.app._copiar(t), largura=76).pack(
+                side="right", anchor="n")
+
+    def _copiar_tudo(self) -> None:
+        self.app._copiar("\n".join(f"{hora}  {frase}" for hora, frase, _ in self.app.historico))
+
+    def _limpar(self) -> None:
+        self.app.historico.clear()
+        self.atualizar()
+
+
+class JanelaApresentacao:
+    """Tela cheia para a plateia: a câmera grande e a frase em letras grandes, como legenda.
+    F11 alterna tela cheia; Esc fecha. Espaço, Backspace e C continuam funcionando."""
+
+    def __init__(self, app: "AplicacaoLibras") -> None:
+        self.app = app
+        j = self.janela = ctk.CTkToplevel(app)
+        j.title("Librahin - apresentação")
+        j.configure(fg_color="#0d0d0c")
+        app._definir_icone(j)
+        largura, altura = j.winfo_screenwidth(), j.winfo_screenheight()
+        escala = ctk.ScalingTracker.get_window_scaling(j) if hasattr(ctk, "ScalingTracker") else 1.0
+        largura, altura = int(largura / escala), int(altura / escala)
+        h_video = int(altura * 0.66)
+        self.tamanho_video = (min(int(h_video * 4 / 3), largura - 80), h_video)
+        self.video = ctk.CTkLabel(j, text="", fg_color="transparent")
+        self.video.pack(pady=(24, 12))
+        self.lbl_glosa = ctk.CTkLabel(j, text="", font=_fonte(20), text_color="#9a9993")
+        self.lbl_glosa.pack()
+        self.lbl_frase = ctk.CTkLabel(j, text="", font=_fonte(44, forte=True), text_color="#ffffff",
+                                      wraplength=largura - 120, justify="center")
+        self.lbl_frase.pack(pady=(4, 0))
+        self.lbl_dica = ctk.CTkLabel(j, text="Esc sai da apresentação   F11 alterna a tela cheia",
+                                     font=_fonte(12), text_color="#6f6e69")
+        self.lbl_dica.place(relx=1.0, rely=0.0, x=-16, y=10, anchor="ne")
+        j.after(4000, lambda: self.lbl_dica.place_forget() if j.winfo_exists() else None)
+        self._imagem = None
+        self._textos = None
+        self.tela_cheia = True
+        j.attributes("-fullscreen", True)
+        j.bind("<Escape>", lambda _e: self.fechar())
+        j.bind("<F11>", lambda _e: self.alternar_tela_cheia())
+        j.bind("<space>", lambda _e: app._finalizar_frase())
+        j.bind("<BackSpace>", lambda _e: app._remover_ultima())
+        j.bind("<KeyPress-c>", lambda _e: app._limpar())
+        j.protocol("WM_DELETE_WINDOW", self.fechar)
+        j.after(80, lambda: (j.lift(), j.focus_force()))
+
+    @property
+    def aberta(self) -> bool:
+        return self.janela.winfo_exists()
+
+    def alternar_tela_cheia(self) -> None:
+        self.tela_cheia = not self.tela_cheia
+        self.janela.attributes("-fullscreen", self.tela_cheia)
+
+    def fechar(self) -> None:
+        self.janela.destroy()
+        self.app.apresentacao = None
+
+    def mostrar_quadro(self, imagem: Image.Image) -> None:
+        largura, altura = self.tamanho_video
+        fator = min(largura / imagem.width, altura / imagem.height)
+        grande = imagem.resize((int(imagem.width * fator), int(imagem.height * fator)), Image.BILINEAR)
+        self._imagem = ctk.CTkImage(light_image=grande, dark_image=grande, size=grande.size)
+        self.video.configure(image=self._imagem)
+
+    def mostrar_vazia(self, imagem: ctk.CTkImage) -> None:
+        largura, altura = self.tamanho_video
+        tamanho = (min(largura, int(altura * 4 / 3)), altura)
+        self._imagem = ctk.CTkImage(light_image=imagem.cget("dark_image"), dark_image=imagem.cget("dark_image"),
+                                    size=tamanho)
+        self.video.configure(image=self._imagem)
+
+    def atualizar(self, frase: str, glosa: str) -> None:
+        if (frase, glosa) != self._textos:
+            self._textos = (frase, glosa)
+            self.lbl_frase.configure(text=frase or " ")
+            self.lbl_glosa.configure(text=f"Sinais: {glosa}" if glosa and glosa != frase else " ")
+
+
+class JanelaVerificacao:
+    """Resultado da verificação do ambiente, com uma dica para cada problema."""
+
+    def __init__(self, app: "AplicacaoLibras", verificacao: VerificacaoAmbiente) -> None:
+        j = _janela_auxiliar(app, "Verificação do ambiente")
+        j.resizable(False, False)
+        corpo = ctk.CTkFrame(j, fg_color="transparent")
+        corpo.pack(padx=26, pady=(20, 20))
+        titulo = ("Tudo pronto para reconhecer os sinais" if verificacao.tudo_ok
+                  else "Alguns ajustes vão melhorar o reconhecimento")
+        ctk.CTkLabel(corpo, text=titulo, font=_fonte(17, forte=True), text_color=TEXTO,
+                     anchor="w").pack(fill="x", pady=(0, 12))
+        cores = {True: STATUS_OK, False: STATUS_ATENCAO, None: STATUS_NEUTRO}
+        for item in verificacao.resultado():
+            linha = ctk.CTkFrame(corpo, fg_color="transparent")
+            linha.pack(fill="x", pady=4)
+            ctk.CTkFrame(linha, width=9, height=9, corner_radius=5, fg_color=cores[item.ok]).pack(
+                side="left", anchor="n", pady=(7, 0), padx=(0, 10))
+            ctk.CTkLabel(linha, text=item.nome, font=_fonte(14, forte=True), text_color=TEXTO, width=82,
+                         anchor="w").pack(side="left", anchor="n")
+            ctk.CTkLabel(linha, text=item.texto, font=app._f_texto, text_color=TEXTO_SECUNDARIO, wraplength=320,
+                         justify="left", anchor="w").pack(side="left", anchor="n")
+        rodape = ctk.CTkFrame(corpo, fg_color="transparent")
+        rodape.pack(fill="x", pady=(16, 0))
+        app._botao_secundario(rodape, "Verificar de novo",
+                              lambda: (j.destroy(), app._iniciar_verificacao())).pack(side="left")
+        app._botao_primario(rodape, "Fechar", j.destroy).pack(side="right")
+        _centralizar(app, j)
+
+
 # --- janela --------------------------------------------------------------------------------
 
 class AplicacaoLibras(ctk.CTk):
@@ -239,9 +515,19 @@ class AplicacaoLibras(ctk.CTk):
         self._aviso_atual = ""
         self._textos: dict = {}            # último texto/cor de cada rótulo (evita redesenhar à toa)
         self._sequencia_mostrada: tuple | None = None
+        self._estabilizador: Estabilizador | None = None
+        self.historico: list[tuple[str, str, str]] = []   # (hora, frase, glosa) das frases finalizadas
+        self._janela_config = None
+        self._janela_historico: JanelaHistorico | None = None
+        self.apresentacao: JanelaApresentacao | None = None
+        self._imagem_vazia: ctk.CTkImage | None = None
+        self._verificacao: VerificacaoAmbiente | None = None
+        self._fim_verificacao = 0.0
+        self._verificar_ao_ligar = not preferencias.estado("verificacao_feita")
 
         self.tabela = carregar_tabela_padrao()  # frases.txt (None se desligada no config)
-        self.sentenca = GerenciadorSentenca(ao_finalizar=self._ao_finalizar, tabela=self.tabela)
+        self.sentenca = GerenciadorSentenca(ao_finalizar=self._ao_finalizar, tabela=self.tabela,
+                                            pausa_s=config.PAUSA_FRASE_S)
         # A voz se prepara na própria thread (no Windows leva ~1 s). Sem callback: a
         # thread da voz não pode mexer no Tkinter; os erros são lidos em _ciclo.
         self.voz = Voz(timeout_inicio=0)
@@ -257,6 +543,7 @@ class AplicacaoLibras(ctk.CTk):
         self.bind("<space>", lambda _e: self._finalizar_frase())
         self.bind("<BackSpace>", lambda _e: self._remover_ultima())
         self.bind("<KeyPress-c>", lambda _e: self._limpar())
+        self.bind("<F11>", lambda _e: self._abrir_apresentacao())
         if self.tabela is not None and self.tabela.avisos:
             for aviso in self.tabela.avisos:
                 print(f"[AVISO] frases.txt: {aviso}")
@@ -374,9 +661,21 @@ class AplicacaoLibras(ctk.CTk):
         ctk.CTkLabel(topo, text="Librahin", font=self._f_marca, text_color=TEXTO).pack(side="left")
         ctk.CTkLabel(topo, text="Libras para texto e voz", font=self._f_rotulo,
                      text_color=TEXTO_SECUNDARIO).pack(side="left", padx=(12, 0), pady=(2, 0))
-        ctk.CTkButton(topo, text="Sobre", width=72, height=30, corner_radius=6, font=self._f_botao,
-                      fg_color="transparent", hover_color=BOTAO_HOVER, text_color=TEXTO_SECUNDARIO,
-                      command=self._abrir_sobre).pack(side="right", padx=14)
+        for texto, comando in (("Sobre", self._abrir_sobre), ("Configurações", self._abrir_configuracoes),
+                               ("Histórico", self._abrir_historico), ("Apresentação", self._abrir_apresentacao)):
+            ctk.CTkButton(topo, text=texto, width=0, height=30, corner_radius=6, font=self._f_botao,
+                          fg_color="transparent", hover_color=BOTAO_HOVER, text_color=TEXTO_SECUNDARIO,
+                          command=comando).pack(side="right", padx=(0, 14 if texto == "Sobre" else 2))
+
+    def _botao_secundario(self, master, texto: str, comando, largura: int = 0) -> ctk.CTkButton:
+        return ctk.CTkButton(master, text=texto, command=comando, width=largura, height=34, corner_radius=8,
+                             font=self._f_botao, fg_color=BOTAO, hover_color=BOTAO_HOVER, text_color=TEXTO,
+                             border_width=1, border_color=BORDA_BOTAO)
+
+    def _botao_primario(self, master, texto: str, comando) -> ctk.CTkButton:
+        return ctk.CTkButton(master, text=texto, command=comando, width=96, height=34, corner_radius=8,
+                             font=self._f_botao_forte, fg_color=DESTAQUE, hover_color=DESTAQUE_HOVER,
+                             text_color="#ffffff")
 
     def _montar_conteudo(self) -> None:
         conteudo = ctk.CTkFrame(self, fg_color="transparent")
@@ -470,7 +769,7 @@ class AplicacaoLibras(ctk.CTk):
         # esperar a frase terminar (a frase inteira continua em "Reproduzir voz").
         self.var_cada_palavra = ctk.BooleanVar(value=config.FALAR_CADA_PALAVRA)
         ctk.CTkSwitch(direita, text="Falar cada palavra assim que for reconhecida", variable=self.var_cada_palavra,
-                      command=self._alternar_cada_palavra, font=self._f_pequeno, text_color=TEXTO_SECUNDARIO,
+                      command=self._mudou_cada_palavra, font=self._f_pequeno, text_color=TEXTO_SECUNDARIO,
                       progress_color=DESTAQUE, switch_width=34, switch_height=18).pack(anchor="w", pady=(12, 0))
         self._alternar_cada_palavra()
 
@@ -522,7 +821,9 @@ class AplicacaoLibras(ctk.CTk):
         if self.processador is not None or self._ProcessadorCamera is None:
             return
         self.erro_camera = None
-        estabilizador = Estabilizador() if self.classificador else None
+        self._estabilizador = estabilizador = (
+            Estabilizador(limiar=config.LIMIAR_CONFIANCA, confirmacao_adaptativa=config.CONFIRMACAO_ADAPTATIVA)
+            if self.classificador else None)
         self.processador = self._ProcessadorCamera(self.classificador, self.indice_camera, estabilizador)
         self.processador.start()
         self.estado_camera = "iniciando"
@@ -568,6 +869,9 @@ class AplicacaoLibras(ctk.CTk):
         if tipo == "status":
             if dado == "ok":
                 self.estado_camera = "ligada"
+                if self._verificar_ao_ligar:  # primeira vez neste computador
+                    self._verificar_ao_ligar = False
+                    self._iniciar_verificacao()
             elif self.estado_camera == "iniciando":
                 self._mostrar_imagem(_tela_vazia("Iniciando a câmera", dado))
         elif tipo == "palavra":
@@ -587,10 +891,15 @@ class AplicacaoLibras(ctk.CTk):
             else:
                 self._mostrar_imagem(_tela_vazia(*TEXTOS_VAZIOS["desligada"]))
             self.lbl_desempenho.configure(text="")
+            self._verificacao = None
 
     def _mostrar_quadro(self, quadro) -> None:
         rgb = cv2.cvtColor(quadro.imagem, cv2.COLOR_BGR2RGB)
         imagem = Image.fromarray(rgb)
+        if self.apresentacao is not None and self.apresentacao.aberta:
+            self.apresentacao.mostrar_quadro(imagem)
+        if self._verificacao is not None:
+            self._amostrar_verificacao(quadro)
         imagem.thumbnail(TAMANHO_VIDEO)
         imagem = _arredondar(imagem, RAIO)
         self._imagem_tk = ctk.CTkImage(light_image=imagem, dark_image=imagem, size=imagem.size)
@@ -598,13 +907,93 @@ class AplicacaoLibras(ctk.CTk):
         self.sentenca.atualizar_deteccao(quadro.estado.sinal, quadro.estado.confianca)
         self._ultimo_resultado = quadro.resultado
         extra = f"   modelo {quadro.estado.tempo_inferencia_ms:.0f} ms" if self.classificador else ""
-        self.lbl_desempenho.configure(text=f"{quadro.fps:.0f} fps{extra}")
+        leve = "   modo leve" if getattr(quadro, "leve", False) else ""
+        self.lbl_desempenho.configure(text=f"{quadro.fps:.0f} fps{extra}{leve}")
         if quadro.estado.aviso:
             self._mostrar_aviso(quadro.estado.aviso)
 
     def _mostrar_imagem(self, imagem: ctk.CTkImage) -> None:
-        self._imagem_tk = imagem
+        self._imagem_tk = self._imagem_vazia = imagem
         self.video.configure(image=imagem)
+        if self.apresentacao is not None and self.apresentacao.aberta:
+            self.apresentacao.mostrar_vazia(imagem)
+
+    # --- verificação do ambiente ---------------------------------------------------------
+
+    def _iniciar_verificacao(self) -> None:
+        if self.estado_camera != "ligada":
+            self._mostrar_aviso("Ligue a câmera para verificar o ambiente.")
+            return
+        self._verificacao = VerificacaoAmbiente()
+        self._fim_verificacao = time.perf_counter() + DURACAO_VERIFICACAO_S
+        self._mostrar_aviso("Verificando o ambiente: fique na posição de fazer os sinais, com as mãos "
+                            "na frente do peito.", duracao_ms=int(DURACAO_VERIFICACAO_S * 1000) + 500)
+
+    def _amostrar_verificacao(self, quadro) -> None:
+        altura, largura = quadro.imagem.shape[:2]
+        self._verificacao.adicionar(brilho_medio(quadro.imagem), quadro.fps,
+                                    largura_ombros(quadro.resultado.pose, largura, altura),
+                                    quadro.resultado.tem_maos)
+        if time.perf_counter() >= self._fim_verificacao:
+            verificacao, self._verificacao = self._verificacao, None
+            preferencias.definir("verificacao_feita", True)
+            self._limpar_aviso()
+            JanelaVerificacao(self, verificacao)
+
+    # --- janelas: configurações, histórico, apresentação ----------------------------------
+
+    def _abrir_configuracoes(self) -> None:
+        if self._janela_config is not None and self._janela_config.janela.winfo_exists():
+            self._janela_config.janela.focus()
+            return
+        self._janela_config = JanelaConfiguracoes(self)
+
+    def _aplicar_preferencia(self, nome: str, valor, salvar: bool = True) -> None:
+        """Muda uma configuração, salva e aplica na hora no que já está rodando."""
+        if salvar:
+            try:
+                preferencias.definir(nome, valor)
+            except (ValueError, OSError) as erro:
+                self._mostrar_aviso(f"Não foi possível salvar a configuração: {erro}")
+                return
+        if nome == "limiar_confianca":
+            self.medidor.definir_limite(valor)
+            if self._estabilizador is not None:
+                self._estabilizador.limiar = valor
+        elif nome == "confirmacao_adaptativa" and self._estabilizador is not None:
+            self._estabilizador.confirmacao_adaptativa = valor
+        elif nome == "modo_leve":
+            pipeline = getattr(self.processador, "pipeline", None)
+            if pipeline is not None:
+                pipeline.modo_leve = valor
+                if valor != "auto":
+                    pipeline.extrator.leve = valor == "ligado"
+        elif nome == "pausa_frase_s":
+            self.sentenca.pausa_s = valor
+        elif nome == "taxa_fala":
+            self.voz.reiniciar_motor()
+        elif nome == "falar_cada_palavra":
+            self.var_cada_palavra.set(valor)
+            self._alternar_cada_palavra()
+
+    def _abrir_historico(self) -> None:
+        if self._janela_historico is not None and self._janela_historico.janela.winfo_exists():
+            self._janela_historico.janela.focus()
+            return
+        self._janela_historico = JanelaHistorico(self)
+
+    def _copiar(self, texto: str) -> None:
+        self.clipboard_clear()
+        self.clipboard_append(texto)
+        self._mostrar_aviso("Copiado. Cole com Ctrl+V onde quiser.")
+
+    def _abrir_apresentacao(self) -> None:
+        if self.apresentacao is not None and self.apresentacao.aberta:
+            self.apresentacao.janela.focus_force()
+            return
+        self.apresentacao = JanelaApresentacao(self)
+        if self.processador is None and self._imagem_vazia is not None:
+            self.apresentacao.mostrar_vazia(self._imagem_vazia)
 
     # --- textos e indicadores ----------------------------------------------------------
 
@@ -686,6 +1075,11 @@ class AplicacaoLibras(ctk.CTk):
                           TEXTO_APAGADO, self._f_texto)
         glosa = s.glosa_final if config.MOSTRAR_GLOSA and s.glosa_final != s.frase_final else ""
         self._mostrar_opcional(self.lbl_glosa_final, f"Sinais: {glosa}" if glosa else "", depois_de=self.lbl_final)
+        if self.apresentacao is not None and self.apresentacao.aberta:
+            if s.palavras:   # frase em construção ao vivo; senão, a última frase finalizada
+                self.apresentacao.atualizar(traducao.texto, traducao.glosa if config.MOSTRAR_GLOSA else "")
+            else:
+                self.apresentacao.atualizar(s.frase_final, s.glosa_final if config.MOSTRAR_GLOSA else "")
 
     def _mostrar_sequencia(self, palavras: tuple[str, ...]) -> None:
         """Cada palavra confirmada vira uma etiqueta; a mais recente fica destacada."""
@@ -807,13 +1201,24 @@ class AplicacaoLibras(ctk.CTk):
 
     def _ao_finalizar(self, frase: str) -> None:
         """Chamado pelo GerenciadorSentenca quando uma frase é encerrada. Se cada palavra
-        já foi falada na hora, a frase não é repetida (fica em "Reproduzir voz")."""
-        if config.FALAR_AO_FINALIZAR and not self.var_cada_palavra.get():
+        já foi falada na hora, a frase só é falada de novo quando ficou diferente da
+        sequência de sinais (a tabela de frases ou a soletração mudaram o texto)."""
+        glosa = self.sentenca.glosa_final
+        self.historico.append((time.strftime("%H:%M:%S"), frase, glosa))
+        del self.historico[:-50]
+        if self._janela_historico is not None and self._janela_historico.janela.winfo_exists():
+            self._janela_historico.atualizar()
+        if not config.FALAR_AO_FINALIZAR:
+            return
+        if not self.var_cada_palavra.get() or _som(frase) != _som(glosa):
             self._falar(frase)
 
     def _alternar_cada_palavra(self) -> None:
         # Falando palavra por palavra, uma nova palavra espera a anterior terminar (em vez de ser ignorada)
         self.voz.politica = "enfileirar" if self.var_cada_palavra.get() else config.POLITICA_VOZ
+
+    def _mudou_cada_palavra(self) -> None:
+        self._aplicar_preferencia("falar_cada_palavra", self.var_cada_palavra.get())
 
     def _falar(self, texto: str) -> None:
         if not self.voz.disponivel:
@@ -856,6 +1261,8 @@ def iniciar(indice_camera: int = config.INDICE_CAMERA, tema: str = "dark") -> No
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Librahin.Aplicacao")
         except Exception:
             pass
+    for aviso in preferencias.carregar():   # configurações salvas neste computador
+        print(f"[AVISO] preferências: {aviso}")
     ctk.set_appearance_mode(tema)
     ctk.set_default_color_theme("blue")
     AplicacaoLibras(indice_camera).mainloop()

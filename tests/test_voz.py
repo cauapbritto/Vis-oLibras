@@ -188,3 +188,23 @@ def test_atalho_speak_do_modulo(monkeypatch):
     assert modulo_voz.speak("oi")
     _esperar(modulo_voz._voz_padrao)
     assert motor.falas == ["oi"]
+
+
+def test_reiniciar_motor_usa_a_velocidade_nova(monkeypatch):
+    from libras import config
+    criados = []
+
+    class MotorComTaxa(MotorFalso):
+        def __init__(self):
+            super().__init__()
+            self.taxa = config.TAXA_FALA
+            criados.append(self)
+
+    voz = Voz(criar_motor=MotorComTaxa, recriar_motor_por_fala=False)
+    monkeypatch.setattr(config, "TAXA_FALA", 222)
+    voz.reiniciar_motor()
+    assert voz.falar("depois da mudança")
+    _esperar(voz)
+    voz.encerrar()
+    assert [m.taxa for m in criados][-1] == 222
+    assert criados[-1].falas == ["depois da mudança"]

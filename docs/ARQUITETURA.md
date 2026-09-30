@@ -135,6 +135,8 @@ Librahin/
 │   ├── traducao.py              # tabela de frases (frases.txt): glosa → português
 │   ├── frase.py                 # gerenciador de sentença
 │   ├── voz.py                   # text-to-speech offline em thread
+│   ├── preferencias.py          # configurações da janela, salvas em preferencias.json
+│   ├── verificacao.py           # verificação do ambiente (luz, câmera, ombros, distância)
 │   ├── pipeline.py              # frame → landmarks → reconhecimento → imagem
 │   ├── captura.py               # câmera + pipeline em thread (a interface não trava)
 │   ├── interface.py             # interface gráfica (CustomTkinter)

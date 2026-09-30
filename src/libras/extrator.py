@@ -198,11 +198,18 @@ class ExtratorLandmarks:
         self._ultimo_timestamp_ms = -1
         self._ultima_pose: np.ndarray | None = None
         self._momento_ultima_pose_ms = 0
+        self.leve = False           # modo leve (ver config.MODO_LEVE)
+        self._quadros = 0
 
     def extrair(self, frame_bgr: np.ndarray) -> ResultadoExtracao:
         altura, largura = frame_bgr.shape[:2]
         rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        if self.leve and config.LEVE_ESCALA < 1:
+            # os pontos saem normalizados (0 a 1): reduzir a imagem não muda as coordenadas
+            rgb = cv2.resize(rgb, (int(largura * config.LEVE_ESCALA), int(altura * config.LEVE_ESCALA)),
+                             interpolation=cv2.INTER_AREA)
         imagem = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        self._quadros += 1
 
         # O modo VIDEO exige timestamps estritamente crescentes.
         timestamp_ms = max(int(time.perf_counter() * 1000), self._ultimo_timestamp_ms + 1)
@@ -230,6 +237,9 @@ class ExtratorLandmarks:
         detectada por até config.MAX_IDADE_POSE_S segundos."""
         if self._pose is None:
             return None
+        if (self.leve and self._quadros % max(1, config.LEVE_POSE_A_CADA) and self._ultima_pose is not None
+                and timestamp_ms - self._momento_ultima_pose_ms <= config.MAX_IDADE_POSE_S * 1000):
+            return self._ultima_pose  # modo leve: reaproveita os ombros entre as detecções
         pose = self._detectar_pose(imagem, timestamp_ms)
         if pose is not None:
             self._ultima_pose, self._momento_ultima_pose_ms = pose, timestamp_ms

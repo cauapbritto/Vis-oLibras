@@ -39,3 +39,9 @@ def test_arredondar_video_deixa_so_os_cantos_transparentes():
 
 def test_creditos_no_config():
     assert len(config.EQUIPE) == 4 and config.ORIENTADOR and config.TITULO_TRABALHO
+
+
+def test_som_ignora_maiusculas_pontuacao_e_hifens():
+    assert interface._som("Sim.") == interface._som("SIM")
+    assert interface._som("Meu nome é Caua") != interface._som("MEU NOME C-A-U-A")
+    assert interface._som("Oi!  Bom dia!") == "oi bom dia"

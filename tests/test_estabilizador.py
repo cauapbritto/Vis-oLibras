@@ -15,7 +15,7 @@ def _rodar(estabilizador, previsoes, inicio=0.0):
 
 def _est(**kw):
     padrao = dict(limiar=0.75, n_consecutivas=3, cooldown_s=1.0, cooldown_mesmo_sinal_s=2.0,
-                  exigir_liberacao=True)
+                  exigir_liberacao=True, confirmacao_adaptativa=False)
     return Estabilizador(**{**padrao, **kw})
 
 
@@ -79,3 +79,21 @@ def test_progresso():
     est.atualizar("OI", 0.9, 0.0)
     est.atualizar("OI", 0.9, 0.2)
     assert est.progresso == 0.5
+
+
+def test_confirmacao_adaptativa_confianca_alta_aceita_com_duas():
+    est = _est(confirmacao_adaptativa=True, limiar_rapido=0.9, n_rapido=2)
+    assert est.atualizar("OI", 0.95, 0.0) is None
+    assert est.atualizar("OI", 0.93, 0.2) == "OI"          # 2 previsões bastam
+
+
+def test_confirmacao_adaptativa_confianca_duvidosa_exige_tres():
+    est = _est(confirmacao_adaptativa=True, limiar_rapido=0.9, n_rapido=2)
+    assert est.atualizar("OI", 0.95, 0.0) is None
+    assert est.atualizar("OI", 0.80, 0.2) is None           # uma duvidosa: volta a exigir 3
+    assert est.necessarias == 3
+    assert est.atualizar("OI", 0.97, 0.4) == "OI"
+    # com a adaptativa desligada, sempre 3
+    est = _est()
+    est.atualizar("SIM", 0.99, 0.0)
+    assert est.atualizar("SIM", 0.99, 0.2) is None

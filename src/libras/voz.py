@@ -67,7 +67,8 @@ class MotorPyttsx3:
     # No Windows, o pyttsx3/SAPI5 às vezes só fala a primeira frase: recria a cada fala.
     recriar_por_fala = platform.system() == "Windows"
 
-    def __init__(self, taxa: int = config.TAXA_FALA) -> None:
+    def __init__(self, taxa: int | None = None) -> None:
+        taxa = config.TAXA_FALA if taxa is None else taxa  # lido agora: a velocidade muda nas Configurações
         if platform.system() == "Windows":
             try:  # o SAPI5 usa COM, que precisa ser iniciado em cada thread
                 import comtypes
@@ -137,7 +138,8 @@ class MotorWindows:
     TEMPO_INICIO_S = 30
     TEMPO_FALA_S = 120
 
-    def __init__(self, taxa: int = config.TAXA_FALA) -> None:
+    def __init__(self, taxa: int | None = None) -> None:
+        taxa = config.TAXA_FALA if taxa is None else taxa  # lido agora: a velocidade muda nas Configurações
         self._taxa = max(-10, min(10, round((taxa - 170) / 20)))  # SAPI: -10 a 10, 0 = normal
         self._respostas: queue.Queue[str | None] = queue.Queue()
         try:
@@ -198,7 +200,8 @@ class MotorWindows:
 class MotorComando:
     """Comando do sistema: `say` (macOS) ou `espeak-ng`/`espeak` (Linux)."""
 
-    def __init__(self, taxa: int = config.TAXA_FALA) -> None:
+    def __init__(self, taxa: int | None = None) -> None:
+        taxa = config.TAXA_FALA if taxa is None else taxa  # lido agora: a velocidade muda nas Configurações
         if platform.system() == "Darwin" and shutil.which("say"):
             vozes = subprocess.run(["say", "-v", "?"], capture_output=True, text=True, timeout=10).stdout
             linha = max(vozes.splitlines(), key=_pontuacao_idioma, default="")
@@ -290,7 +293,7 @@ class Voz:
 
     @property
     def falando(self) -> bool:
-        return self._falando.is_set() or not self._fila.empty()
+        return self._falando.is_set()  # marcado em falar(), desmarcado quando a fila de falas acaba
 
     def falar(self, texto: str) -> bool:
         """Pede para falar `texto`. Devolve False (sem erro) se o texto está vazio,
@@ -305,6 +308,11 @@ class Voz:
         return True
 
     speak = falar  # nome em inglês, como pedido na especificação
+
+    def reiniciar_motor(self) -> None:
+        """Recria o motor na thread da voz (ex.: depois de mudar config.TAXA_FALA).
+        Já deixa o novo motor pronto, para a próxima fala não esperar."""
+        self._fila.put(_RECRIAR)
 
     def encerrar(self, timeout: float = 2.0) -> None:
         self._fila.put(None)
@@ -330,6 +338,10 @@ class Voz:
             if texto is None:
                 _fechar_motor(motor)
                 break
+            if texto is _RECRIAR:
+                _fechar_motor(motor)
+                motor = self._iniciar_motor()
+                continue
             try:
                 if motor is None:
                     motor = self._iniciar_motor()
@@ -356,6 +368,9 @@ class Voz:
                 self.ao_erro(mensagem)
             except Exception:
                 pass
+
+
+_RECRIAR = object()  # pedido interno da fila: recriar o motor
 
 
 def _fechar_motor(motor) -> None:

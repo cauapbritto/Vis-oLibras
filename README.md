@@ -123,11 +123,32 @@ treinar.
 
 **Resposta mais rápida.** Por padrão, a frase é falada quando termina: com o botão/Espaço
 (na hora) ou depois de 2,5 s sem sinais (`PAUSA_FRASE_S`). Ligando a chave **"Falar cada
-palavra assim que for reconhecida"** na janela, cada palavra é falada logo que é confirmada
-(a frase inteira continua disponível em Reproduzir voz). No Windows, a voz fica carregada
-num processo aberto desde o início, então cada fala começa na hora. Para confirmar os
-sinais mais depressa, veja `N_CONSECUTIVAS` e `PASSO_INFERENCIA` na tabela abaixo (mais
-rápido = mais risco de palavras erradas).
+palavra assim que for reconhecida"** na janela, cada palavra é falada logo que é confirmada,
+e no final a frase só é falada de novo se a tabela de frases ou a soletração mudaram o texto
+("Meu nome é Caua"). No Windows, a voz fica carregada num processo aberto desde o início,
+então cada fala começa na hora. Além disso:
+
+- **Confirmação adaptativa** (`CONFIRMACAO_ADAPTATIVA`): com confiança acima de 90% em todas
+  as previsões, bastam 2 previsões seguidas em vez de 3.
+- **Fim do movimento** (`GATILHO_FIM_MOVIMENTO`): quando as mãos se mexem e param, o modelo
+  é chamado na hora, sem esperar a próxima previsão agendada. Os limites de velocidade
+  (`VELOCIDADE_MOVIMENTO`, `VELOCIDADE_PARADA`) são estimativas: ajustem com o uso real.
+- **Modo leve** (`MODO_LEVE`): em computadores lentos (menos de 15 fps por 3 s), detecta os
+  ombros 1 a cada 3 quadros e reduz a imagem enviada ao MediaPipe. A barra de baixo mostra
+  "modo leve" quando está ativo.
+
+**Janelas da barra superior.**
+
+- **Configurações:** confiança mínima, confirmação rápida, modo leve, pausa para encerrar a
+  frase, velocidade da voz e falar cada palavra. Valem na hora e ficam salvas neste
+  computador (`preferencias.json`, fora do Git). "Restaurar padrão" volta ao `config.py`.
+  Também tem "Testar voz" e "Verificar ambiente".
+- **Histórico:** as frases finalizadas na sessão, com "Copiar" (e "Copiar tudo").
+- **Apresentação** (ou F11): tela cheia para a plateia, com a câmera grande e a frase em
+  letras grandes, como legenda. Esc sai; Espaço, Backspace e C continuam funcionando.
+- **Verificação do ambiente:** na primeira vez que a câmera liga neste computador (e quando
+  pedir nas Configurações), confere luz, velocidade da câmera, ombros, distância e mãos
+  por 4 segundos e mostra uma dica para cada problema.
 
 **Sem voz?** `python scripts/demonstracao/testar_voz.py` (ou menu → V) testa cada motor de
 voz do sistema, um por vez (no Windows: as vozes do sistema pelo PowerShell/System.Speech,
