@@ -59,15 +59,22 @@ FONTES_SISTEMA = (
     "/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Arial.ttf",  # macOS
 )
 
+FONTES_SISTEMA_NEGRITO = (
+    "seguisb.ttf", "segoeuib.ttf", "arialbd.ttf",                 # Windows (Segoe UI Semibold)
+    "DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "LiberationSans-Bold.ttf",                                    # Linux
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/Library/Fonts/Arial Bold.ttf",  # macOS
+)
 
-@lru_cache(maxsize=8)
-def fonte_com_acentos(tamanho: int):
+
+@lru_cache(maxsize=16)
+def fonte_com_acentos(tamanho: int, negrito: bool = False):
     """Fonte com acentos para o Pillow, ou None se o Pillow não estiver disponível."""
     try:
         from PIL import ImageFont
     except ImportError:
         return None
-    for nome in FONTES_SISTEMA:
+    for nome in (FONTES_SISTEMA_NEGRITO if negrito else ()) + FONTES_SISTEMA:
         try:
             return ImageFont.truetype(nome, tamanho)
         except OSError:
@@ -76,6 +83,38 @@ def fonte_com_acentos(tamanho: int):
         return ImageFont.load_default(size=tamanho)  # Pillow >= 10.1: fonte embutida
     except TypeError:
         return None
+
+
+def _capsula(desenho, p1, p2, raio: float, cor) -> None:
+    """Retângulo de pontas redondas entre p1 e p2, em qualquer ângulo (Pillow)."""
+    import math
+    (x1, y1), (x2, y2) = p1, p2
+    angulo = math.atan2(y2 - y1, x2 - x1)
+    nx, ny = -math.sin(angulo) * raio, math.cos(angulo) * raio
+    desenho.polygon([(x1 + nx, y1 + ny), (x2 + nx, y2 + ny), (x2 - nx, y2 - ny), (x1 - nx, y1 - ny)], fill=cor)
+    for x, y in (p1, p2):
+        desenho.ellipse([x - raio, y - raio, x + raio, y + raio], fill=cor)
+
+
+def icone_mao(tamanho: int, cor_mao="#ffffff", cor_fundo=None):
+    """Ícone do Vis-oLibras: mão aberta estilizada, como imagem RGBA do Pillow.
+    Com `cor_fundo`, a mão fica dentro de um quadrado de cantos arredondados.
+    Desenhado 4x maior e reduzido, para as bordas ficarem suaves."""
+    from PIL import Image, ImageDraw
+    lado = tamanho * 4
+    imagem = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+    d = ImageDraw.Draw(imagem)
+    if cor_fundo is not None:
+        d.rounded_rectangle([0, 0, lado - 1, lado - 1], radius=int(lado * 0.22), fill=cor_fundo)
+    y = lambda v: v * lado            # noqa: E731
+    x = lambda v: (v + 0.045) * lado  # noqa: E731  (desloca para centralizar a mão com o polegar)
+    d.rounded_rectangle([x(0.30), y(0.44), x(0.71), y(0.84)], radius=y(0.13), fill=cor_mao)  # palma
+    for centro, topo, largura in ((0.345, 0.23, 0.092), (0.455, 0.155, 0.092),
+                                  (0.565, 0.19, 0.092), (0.665, 0.29, 0.09)):              # dedos
+        d.rounded_rectangle([x(centro - largura / 2), y(topo), x(centro + largura / 2), y(0.58)],
+                            radius=y(largura / 2), fill=cor_mao)
+    _capsula(d, (x(0.36), y(0.70)), (x(0.185), y(0.495)), y(0.05), cor_mao)                # polegar
+    return imagem.resize((tamanho, tamanho), Image.LANCZOS)
 
 
 def desenhar_legenda(frame: np.ndarray, linhas: list[tuple[str, tuple[int, int, int], int]]) -> int:

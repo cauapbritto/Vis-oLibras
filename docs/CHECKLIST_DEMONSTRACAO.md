@@ -11,7 +11,8 @@
 - [ ] Fechar Zoom, Teams, navegador com câmera e outros programas pesados
 - [ ] Computador na tomada (modo de energia "desempenho")
 - [ ] Posicionar a câmera: pessoa a ~1 m, ombros e mãos visíveis, luz de frente
-- [ ] Abrir `python scripts/demonstracao/app.py` → Câmera: OK · Modelo: carregado · Voz: pronta
+- [ ] Abrir a aplicação (atalho Vis-oLibras → opção 1) e esperar sair o "Carregando"
+- [ ] Clicar em Iniciar câmera → barra de baixo com pontos verdes: "Câmera ligada", "Modelo com 10 sinais" e "Voz: ..."
 - [ ] Fazer 2 sinais de teste e finalizar uma frase (conferir o som)
 - [ ] Menu → F: a tabela de frases não mostra avisos (e foi revisada pelo grupo)
 - [ ] Limpar a frase antes de começar

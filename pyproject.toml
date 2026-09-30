@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vis-olibras"
-version = "0.2.0"
+version = "0.3.0"
 description = "Tradução de Libras para texto e voz com visão computacional e IA"
 requires-python = ">=3.10"
 dependencies = [
@@ -36,3 +36,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+libras = ["recursos/*.png", "recursos/*.ico"]

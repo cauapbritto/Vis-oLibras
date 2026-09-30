@@ -66,6 +66,7 @@ def arquivos_do_pacote(raiz: Path) -> list[Path]:
     """Arquivos (relativos à raiz do projeto) que a aplicação precisa."""
     modulos = ("__init__",) + libras.MODULOS_NUCLEO + libras.MODULOS_APLICACAO
     arquivos = [Path("src/libras") / f"{m}.py" for m in modulos]
+    arquivos += sorted(p.relative_to(raiz) for p in config.DIR_RECURSOS.glob("*") if p.is_file())  # ícone
     arquivos += sorted(p.relative_to(raiz) for p in (raiz / "scripts/demonstracao").glob("*.py"))
     arquivos.append(Path("requirements.txt"))
     if config.ARQ_FRASES.is_file():

@@ -51,7 +51,7 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 - [ ] Com Zoom/Teams usando a câmera: mensagem clara de câmera em uso
 
 ### Reconhecimento
-- [ ] "Modelo: carregado" em verde na interface (amarelo = faltam sinais no modelo)
+- [ ] "Modelo com 10 sinais" com ponto verde na barra de baixo (amarelo = faltam sinais no modelo)
 - [ ] Cada sinal do vocabulário é reconhecido em pelo menos 4 de 5 tentativas
 - [ ] Segurar um sinal por 5 s gera **uma** palavra
 - [ ] Abaixar as mãos e repetir o sinal gera a segunda palavra
@@ -77,17 +77,22 @@ Faça com a **mesma máquina, câmera e local** da apresentação. Marque cada i
 - [ ] Testado por uma pessoa que **não** gravou o dataset
 
 ### Voz
-- [ ] "Voz: pronta" na interface
+- [ ] "Voz: <nome da voz>" com ponto verde na barra de baixo (ex.: Microsoft Maria)
 - [ ] Finalizar uma frase fala em português (não em inglês)
 - [ ] Volume do computador/caixa de som ajustado para o local
 - [ ] Pedir "Reproduzir voz" duas vezes seguidas não trava (a segunda é ignorada com aviso)
 - [ ] Sem alto-falante/áudio: a interface continua funcionando
 
 ### Interface
-- [ ] Iniciar câmera → imagem com landmarks; Parar câmera → volta a "Câmera parada"
+- [ ] Ao abrir, a janela aparece logo com "Carregando" e o botão Iniciar câmera é liberado em poucos segundos
+- [ ] Ícone do Vis-oLibras (mão azul) na janela, na barra de tarefas e no atalho da Área de Trabalho
+- [ ] Iniciar câmera → imagem com landmarks; Parar câmera → volta a "Câmera desligada"
+- [ ] Sem câmera (ou com ela ocupada pelo Teams/Zoom), o painel explica o erro e a barra de baixo mostra "Câmera com erro"
+- [ ] O botão Sobre mostra a equipe, o orientador e o curso; Esc ou Fechar fecha
 - [ ] Iniciar/parar 3 vezes seguidas sem travar
 - [ ] Remover última palavra, Limpar frase e Finalizar frase funcionam (e os atalhos Backspace, C, Espaço)
-- [ ] "Sinal detectado agora", "Último confirmado", "Sequência" e "Frase final" mudam como esperado
+- [ ] "Sinal detectado", "Último sinal confirmado", "Frase em construção" e "Frase final" mudam como esperado
+- [ ] Medidor de confiança azul acima de 75% e amarelo abaixo, com o texto "Acima/Abaixo do limite"
 - [ ] Uma frase cadastrada no `frases.txt` (ex.: BOM DIA) aparece em português na prévia e na frase final, com "Sinais: ..." embaixo, e é falada em português
 - [ ] Uma sequência sem frase cadastrada continua aparecendo como glosa
 - [ ] Fechar a janela com a câmera ligada encerra o programa e libera a câmera

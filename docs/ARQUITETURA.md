@@ -132,12 +132,14 @@ Vis-oLibras/
 │   ├── classificador.py         # carregar o modelo e prever (sinal, confiança)
 │   ├── estabilizador.py         # anti-repetição
 │   ├── reconhecedor.py          # sequência + modelo + estabilizador, frame a frame
+│   ├── traducao.py              # tabela de frases (frases.txt): glosa → português
 │   ├── frase.py                 # gerenciador de sentença
 │   ├── voz.py                   # text-to-speech offline em thread
 │   ├── pipeline.py              # frame → landmarks → reconhecimento → imagem
 │   ├── captura.py               # câmera + pipeline em thread (a interface não trava)
 │   ├── interface.py             # interface gráfica (CustomTkinter)
 │   ├── __main__.py              # python -m libras → abre a interface
+│   ├── recursos/                # ícone do aplicativo (icone.png, icone.ico)
 │   │
 │   │   DESENVOLVIMENTO (modo treinamento)
 │   ├── dataset.py               # gravar, ler, validar e analisar amostras
@@ -147,7 +149,9 @@ Vis-oLibras/
 ├── scripts/
 │   ├── demonstracao/            # MODO USUÁRIO
 │   │   ├── app.py               # interface gráfica (recomendada para apresentar)
-│   │   └── executar.py          # versão simples em janela do OpenCV
+│   │   ├── executar.py          # versão simples em janela do OpenCV
+│   │   ├── testar_voz.py        # testa cada motor de voz do sistema
+│   │   └── testar_frases.py     # confere a tabela de frases (frases.txt)
 │   └── desenvolvimento/         # MODO DESENVOLVIMENTO
 │       ├── testar_deteccao.py   # diagnóstico: webcam → MediaPipe (sem reconhecimento)
 │       ├── coletar_dados.py     # grava amostras de um sinal
@@ -159,6 +163,7 @@ Vis-oLibras/
 │       ├── teste_controlado.py  # participantes fazem cada sinal N vezes; grava CSV
 │       ├── resumir_testes.py    # métricas dos testes controlados (txt, json, csv, png)
 │       ├── empacotar_app.py     # gera o zip do modo usuário (dist/Vis-oLibras-demo.zip)
+│       ├── gerar_icone.py       # desenha o ícone do aplicativo (src/libras/recursos)
 │       └── visualizar_amostra.py# (a implementar) reproduz uma amostra gravada
 │
 ├── data/                        # (desenvolvimento) amostras; fora do Git

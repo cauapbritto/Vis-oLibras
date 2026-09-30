@@ -13,7 +13,7 @@ demonstração (scripts/desenvolvimento/empacotar_app.py) leva só o núcleo e a
 aplicação.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 MODULOS_NUCLEO = ("config", "camera", "extrator", "features", "temporal", "desenho", "metricas")
 MODULOS_APLICACAO = ("classificador", "estabilizador", "reconhecedor", "traducao", "frase", "voz",

@@ -141,6 +141,8 @@ if ($NoWindows) {
         $atalho.TargetPath = Join-Path $Raiz "Vis-oLibras.bat"
         $atalho.WorkingDirectory = $Raiz
         $atalho.Description = "Vis-oLibras - Libras para texto e voz"
+        $icone = Join-Path $Raiz "src\libras\recursos\icone.ico"
+        if (Test-Path $icone) { $atalho.IconLocation = "$icone,0" }
         $atalho.Save()
         Ok "Atalho 'Vis-oLibras' criado na Área de Trabalho"
     } catch {

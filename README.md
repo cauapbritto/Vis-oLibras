@@ -86,11 +86,15 @@ python -m libras                           # o mesmo, se o pacote estiver instal
 python scripts/demonstracao/executar.py    # versão simples em janela do OpenCV
 ```
 
-A interface mostra a webcam com os landmarks, o **sinal detectado agora** (com a
-confiança), o **último sinal confirmado**, a **sequência** e a **frase final**, e os
-indicadores de câmera, modelo, mãos e voz. Botões: Iniciar/Parar câmera, Finalizar frase,
-Reproduzir voz, Remover última palavra e Limpar frase (atalhos: Espaço, Backspace, C).
-Sem modelo treinado, a câmera funciona e mostra só os landmarks.
+A janela abre na hora e mostra "Carregando" enquanto o MediaPipe, o modelo e a voz são
+preparados em segundo plano; o botão **Iniciar câmera** é liberado ao terminar. Depois
+mostra a webcam com os landmarks, o **sinal detectado agora** (com a confiança e uma
+marca no limite de aceitação de 75%), o **último sinal confirmado**, a **sequência** (uma
+etiqueta por sinal) e a **frase final**. A barra de baixo mostra o estado da câmera, do
+modelo, das mãos e da voz, e o botão **Sobre** mostra os créditos. Botões: Iniciar/Parar
+câmera, Finalizar frase, Reproduzir voz, Remover última palavra e Limpar frase (atalhos:
+Espaço, Backspace, C). Sem modelo treinado, a câmera funciona e mostra só os landmarks.
+Tema claro: `python scripts/demonstracao/app.py --tema claro`.
 
 Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece em "Frase
 final" e é falada em português do Brasil.

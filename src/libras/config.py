@@ -39,6 +39,11 @@ ARQ_POSE_LANDMARKER = DIR_MODELOS / "pose_landmarker_lite.task"
 # Tabela de frases (sinais -> português), editável no Bloco de Notas.
 ARQ_FRASES = RAIZ_PROJETO / "frases.txt"
 
+# Ícone do aplicativo (gerado por scripts/desenvolvimento/gerar_icone.py)
+DIR_RECURSOS = Path(__file__).resolve().parent / "recursos"
+ARQ_ICONE_PNG = DIR_RECURSOS / "icone.png"
+ARQ_ICONE_ICO = DIR_RECURSOS / "icone.ico"
+
 DIR_REPORTS = RAIZ_PROJETO / "reports"
 DIR_TESTES = DIR_REPORTS / "testes"  # CSVs dos testes controlados (teste_controlado.py)
 
@@ -278,6 +283,21 @@ JANELA_REPETICAO_S = 1.5   # mesma palavra de novo em menos que isso = repetiç�
 # como glosa (a sequência de sinais). Ver src/libras/traducao.py.
 USAR_TABELA_FRASES = True  # False: volta ao modo só glosa
 MOSTRAR_GLOSA = True       # mostra a sequência de sinais em letra pequena, embaixo do português
+
+# =============================================================================
+# Créditos (janela "Sobre" da aplicação)
+# =============================================================================
+
+TITULO_TRABALHO = ("Tradução de Libras para Texto e Voz utilizando "
+                   "Visão Computacional e Inteligência Artificial")
+EQUIPE = (
+    "Cauã Pedrozo Brito",
+    "Adryel da Assunção Rocha",
+    "Alber Alberguini Cabral",
+    "João Francisco da Silva Malaquias",
+)
+ORIENTADOR = "Éder Lemes"
+CURSO = "Tecnologia em Análise e Desenvolvimento de Sistemas"
 
 # =============================================================================
 # Teclas da aplicação em tempo real (além de Q/ESC para sair)
