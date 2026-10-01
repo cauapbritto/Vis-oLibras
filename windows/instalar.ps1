@@ -14,19 +14,33 @@ function Encerrar([int]$codigo) {
     exit $codigo
 }
 
+# O Python da Microsoft Store roda "empacotado" e, em vários computadores, o Windows não
+# entrega a imagem da câmera para ele (fica preta), mesmo com a câmera funcionando no
+# app Câmera e no navegador. Por isso ele é evitado.
+$Script:SoPythonDaLoja = $false
+function Eh-Python-Da-Loja([string]$caminho) {
+    return $caminho -match "WindowsApps|PythonSoftwareFoundation"
+}
+
 function Encontrar-Python {
-    # Devolve o comando de um Python 3.10 a 3.12 (preferência: 3.11), ou $null.
-    foreach ($versao in "3.11", "3.12", "3.10") {
-        if (Get-Command py -ErrorAction SilentlyContinue) {
-            & py "-$versao" -c "import sys" 2>$null
-            if ($LASTEXITCODE -eq 0) { return @("py", "-$versao") }
-        }
+    # Devolve o comando de um Python 3.10 a 3.12 (preferência: 3.11) que não seja o da
+    # Microsoft Store, ou $null.
+    $Script:SoPythonDaLoja = $false
+    $candidatos = @()
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        foreach ($versao in "3.11", "3.12", "3.10") { $candidatos += ,@("py", "-$versao") }
     }
     foreach ($nome in "python", "python3") {
-        if (Get-Command $nome -ErrorAction SilentlyContinue) {
-            $versao = & $nome -c "import sys; print('%d.%d' % sys.version_info[:2])" 2>$null
-            if ($LASTEXITCODE -eq 0 -and $versao -in "3.10", "3.11", "3.12") { return @($nome) }
-        }
+        if (Get-Command $nome -ErrorAction SilentlyContinue) { $candidatos += ,@($nome) }
+    }
+    foreach ($comando in $candidatos) {
+        $programa = $comando[0]
+        $extras = @($comando | Select-Object -Skip 1)
+        $saida = & $programa @extras -c "import sys; print('%d.%d' % sys.version_info[:2]); print(sys.base_prefix)" 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $saida -or @($saida).Count -lt 2) { continue }
+        if (@($saida)[0] -notin "3.10", "3.11", "3.12") { continue }
+        if (Eh-Python-Da-Loja (@($saida)[1])) { $Script:SoPythonDaLoja = $true; continue }
+        return $comando
     }
     return $null
 }
@@ -75,8 +89,11 @@ if ($NoWindows -and $Raiz.Length -gt $LimiteCaminho -and -not (Caminhos-Longos-L
 # 1. Python ------------------------------------------------------------------
 Titulo "[1/6] Python 3.10 a 3.12"
 $python = Encontrar-Python
+if (-not $python -and $Script:SoPythonDaLoja) {
+    Aviso "Só achei o Python da Microsoft Store, que costuma receber imagem preta da câmera."
+}
 if (-not $python -and $NoWindows -and (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Host "   Python não encontrado. Instalando o Python 3.11 pelo winget..."
+    Write-Host "   Instalando o Python 3.11 do python.org pelo winget..."
     winget install -e --id Python.Python.3.11 --source winget --silent `
         --accept-package-agreements --accept-source-agreements
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
@@ -94,6 +111,11 @@ Ok ("Python encontrado: " + ($python -join " "))
 
 # 2. Ambiente virtual --------------------------------------------------------
 Titulo "[2/6] Ambiente virtual (.venv)"
+$ConfigVenv = Join-Path $Raiz ".venv\pyvenv.cfg"
+if ((Test-Path $ConfigVenv) -and (Eh-Python-Da-Loja (Get-Content $ConfigVenv -Raw))) {
+    Aviso "O ambiente atual foi criado com o Python da Microsoft Store: recriando com o outro Python."
+    Remove-Item (Join-Path $Raiz ".venv") -Recurse -Force
+}
 if (Test-Path $PythonVenv) {
     Ok "Ambiente já existe, reaproveitando"
 } else {

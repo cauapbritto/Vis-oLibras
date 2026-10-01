@@ -53,6 +53,11 @@ def folha_de_contato(resultados: list[TesteCamera], destino: Path) -> None:
 
 
 def main() -> int:
+    loja = any(m in sys.base_prefix for m in ("WindowsApps", "PythonSoftwareFoundation"))
+    print(f"Python: {sys.base_prefix}{'  (Microsoft Store)' if loja else ''}")
+    if loja:
+        print("[AVISO] Este é o Python da Microsoft Store, que costuma receber imagem preta da câmera.")
+        print("        Instale o Python 3.11 do python.org e rode o INSTALAR.bat de novo.\n")
     print("Testando as câmeras em cada modo (leva alguns segundos por câmera)...")
     print("Feche a aplicação e outros programas que usam a câmera (Teams, Zoom, navegador).\n")
     resultados = diagnosticar()
