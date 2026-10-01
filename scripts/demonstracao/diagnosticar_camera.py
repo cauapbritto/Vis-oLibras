@@ -83,6 +83,9 @@ def main() -> int:
             print("   - teclado de notebook: algumas marcas têm uma tecla (F8/F10) que desliga a câmera;")
             print("   - antivírus com \"proteção de webcam\" (Kaspersky, ESET, Bitdefender, Avast) entrega imagem")
             print("     preta a programas que ele não conhece: libere o python.exe ou o Librahin no antivírus;")
+            print("     Kaspersky Endpoint Security: Prevenção de intrusão de host > direitos do python.exe")
+            print(f"     ({sys.base_prefix}\\python.exe) > Acesso à webcam > Permitir. Se estiver bloqueado")
+            print("     pela política da empresa/faculdade, só a TI consegue liberar;")
             if platform.system() == "Windows":
                 resposta = input("Abrir agora a tela de privacidade da câmera do Windows? [S/n] ").strip().lower()
                 if not resposta.startswith("n"):
