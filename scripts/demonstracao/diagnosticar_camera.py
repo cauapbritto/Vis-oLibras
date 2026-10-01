@@ -10,6 +10,7 @@ aplicação, no teste de câmera e na gravação.
 
 import os
 import platform
+import subprocess
 import sys
 from pathlib import Path
 
@@ -95,7 +96,15 @@ def main() -> int:
         print("   - trocar a webcam de porta USB (de preferência direto no computador, sem hub);")
         print("   - fechar programas da própria câmera (ex.: Logitech Capture, Logi Tune);")
         print("   - reinstalar o driver da câmera pelo Gerenciador de Dispositivos.")
-        print("\nPara descobrir o erro exato, rode a opção R do menu e envie o relatório.")
+        if cv2.__version__.startswith("5") and "--sem-troca" not in sys.argv:
+            print(f"\nO OpenCV instalado é o {cv2.__version__}, uma versão nova. Dá para testar com o OpenCV 4.")
+            resposta = input("Instalar o OpenCV 4 e testar de novo? [S/n] ").strip().lower()
+            if not resposta.startswith("n"):
+                subprocess.run([sys.executable, "-m", "pip", "install", "opencv-contrib-python<5"], check=False)
+                # um processo novo para carregar o OpenCV recém-instalado
+                return subprocess.run([sys.executable, __file__, "--sem-troca"], check=False).returncode
+        print("\nGerando o relatório detalhado (erro exato do Windows)...")
+        subprocess.run([sys.executable, str(Path(__file__).with_name("relatorio_camera.py"))], check=False)
         return 1
 
     print(f"\nMelhor: Câmera {melhor.indice + 1} no modo {NOMES_MODOS[melhor.modo]} ({melhor.descricao}).")
