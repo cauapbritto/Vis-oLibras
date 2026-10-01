@@ -15,7 +15,8 @@ e um **menu com números**.
 
 ### A1. O que você precisa
 
-- Computador com **Windows 10 ou 11** e **webcam**
+- Computador com **Windows 10 ou 11** e **webcam** (no Linux, o mesmo menu abre com o
+  `librahin.sh`: veja a instalação no [README](../README.md#instalação))
 - Internet (só para instalar)
 - Um lugar **bem iluminado**, com a luz de frente para você (não de costas)
 
@@ -63,8 +64,9 @@ na pasta do projeto). Aparece o menu:
      1  Abrir a aplicação
      V  Testar a voz
      F  Conferir a tabela de frases (frases.txt)
-     2  Testar a câmera
      D  Diagnosticar a câmera (imagem com defeito ou não abre)
+     R  Relatório detalhado da câmera (para enviar a quem está ajudando)
+     2  Testar a câmera
 
    GRAVAR E TREINAR
      3  Gravar sinais
@@ -241,7 +243,7 @@ Os resultados (accuracy, precision, recall, F1, tempos, matriz de confusão) fic
 |---|---|
 | "O Windows protegeu o computador" | **Mais informações** → **Executar assim mesmo** |
 | "Extraia o zip antes de usar" | Você abriu o `.bat` de dentro do zip: extraia (A2) e rode o da pasta extraída |
-| "O projeto ainda não foi instalado" | Rode o `INSTALAR.bat` primeiro |
+| "O projeto ainda não foi instalado" | Rode o `INSTALAR.bat` primeiro (no Linux: `./librahin.sh instalar`) |
 | "Python não encontrado" | Ver a dica do passo A3 |
 | `No module named 'sklearn...'` ou aviso de "Long Path" | Caminho da pasta longo demais: rode o `INSTALAR.bat` de novo e aceite copiar para `Librahin` (ou mova a pasta para um caminho curto e apague a `.venv`) |
 | "Este Python veio sem o tkinter" | Siga a mensagem: instalador do Python → Modify → marque *tcl/tk and IDLE*; apague a pasta `.venv` e rode o `INSTALAR.bat` |
@@ -249,8 +251,9 @@ Os resultados (accuracy, precision, recall, F1, tempos, matriz de confusão) fic
 | Câmera não abre | Feche Teams/Zoom/navegador; se tiver mais de uma câmera, escolha outra na lista ao lado do botão da câmera |
 | Imagem preta, mas o app Câmera e o Chrome funcionam | Antivírus bloqueando a webcam do `python.exe` (aconteceu com o **Kaspersky Endpoint Security** nas máquinas da faculdade): libere o acesso à webcam para o Python no antivírus ou peça à TI. A opção **R** do menu gera um relatório com o erro exato |
 | Imagem preta | Abra a tampa de privacidade da webcam (várias Logitech têm uma tampinha); Windows: Configurações → Privacidade e segurança → Câmera → ligue o acesso e "Permitir que aplicativos da área de trabalho acessem a câmera"; feche Logi Tune/Teams |
-| 1 quadro por segundo | Ligue a webcam direto no computador (sem hub), de preferência USB 3; mais luz no ambiente; desligue "RightLight" no Logi Tune |
-| Imagem com listras, chuviscos ou 1 quadro por segundo | Feche a aplicação e use a opção **D** do menu (testa cada câmera e modo e salva o que funcionar); ou Configurações → Câmera → troque o modo (DirectShow, DirectShow MJPG ou Media Foundation). A câmera infravermelha do Windows Hello também dá imagem estranha: escolha outra na lista |
+| Imagem com listras ou chuviscos | Feche a aplicação e use a opção **D** do menu (testa cada câmera e modo e salva o que funcionar); ou Configurações → Câmera → troque o modo. A câmera infravermelha do Windows Hello também dá imagem estranha: escolha outra na lista |
+| Imagem certa, mas 1 quadro por segundo | Ligue a webcam direto no computador (sem hub), de preferência USB 3; mais luz no ambiente; desligue "RightLight" no Logi Tune |
+| Nada disso resolve | Opção **R** do menu: gera um relatório com o erro exato; mande o texto para quem está ajudando |
 | Tudo "Descartada" | Afaste-se (ombros visíveis) e melhore a luz |
 | Tecla Q não responde | Clique uma vez na janela da câmera e aperte Q de novo |
 | Voz em inglês | Configurações → Hora e idioma → Idioma e região → Português (Brasil) → Opções → instalar a **Fala** (conversão de texto em fala) |
@@ -290,6 +293,8 @@ Equivalentes das opções do menu (com o `(.venv)` ativo):
 |---|---|
 | 1 | `python scripts/demonstracao/app.py` |
 | 2 | `python scripts/desenvolvimento/testar_deteccao.py` |
+| D | `python scripts/demonstracao/diagnosticar_camera.py` |
+| R | `python scripts/demonstracao/relatorio_camera.py` |
 | 3 | `python scripts/desenvolvimento/coletar_dados.py --sinal OI --pessoa seunome --meta 30` (um sinal por vez; `_NADA` com `--meta 60`) |
 | 6 | `Get-ChildItem gravacoes_*.zip \| ForEach-Object { Expand-Archive $_.FullName -DestinationPath data -Force }` e depois `python scripts/desenvolvimento/analisar_dataset.py --reconstruir-metadata` |
 | 7 | `python scripts/desenvolvimento/analisar_dataset.py` |

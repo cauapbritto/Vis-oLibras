@@ -108,7 +108,7 @@ câmera, Finalizar frase, Reproduzir voz, Remover última palavra e Limpar frase
 Espaço, Backspace, C). Sem modelo treinado, a câmera funciona e mostra só os landmarks.
 Tema claro: `python scripts/demonstracao/app.py --tema claro`.
 
-Quando a frase é finalizada (botão, Espaço ou 2,5 s sem sinais), ela aparece em "Frase
+Quando a frase é finalizada (botão, Espaço ou 2,5 s com as mãos paradas), ela aparece em "Frase
 final" e é falada em português do Brasil.
 
 **Tabela de frases (`frases.txt`).** Sequências cadastradas pelo grupo viram português:
@@ -158,12 +158,15 @@ chuviscos (formato de imagem lido errado) é descartada. Se nenhum modo der cert
 aviso; dá para escolher o modo em Configurações → Câmera (`MODO_CAMERA`). A opção **D** do menu
 (`scripts/demonstracao/diagnosticar_camera.py`) testa cada câmera em cada modo, salva
 `reports/diagnostico_camera.png` com uma miniatura de cada teste e oferece usar a melhor
-combinação.
+combinação. A opção **R** (`scripts/demonstracao/relatorio_camera.py`) gera
+`reports/relatorio_camera.txt` com o erro exato que o Windows devolve, as câmeras, as
+permissões e o antivírus — foi assim que se descobriu que o **Kaspersky Endpoint Security**
+das máquinas da faculdade entregava imagem preta ao Python.
 
 **Janelas da barra superior.**
 
 - **Configurações:** confiança mínima, confirmação rápida, modo leve, pausa para encerrar a
-  frase, velocidade da voz e falar cada palavra. Valem na hora e ficam salvas neste
+  frase, velocidade da voz, falar cada palavra e o modo de abrir a câmera. Valem na hora e ficam salvas neste
   computador (`preferencias.json`, fora do Git). "Restaurar padrão" volta ao `config.py`.
   Também tem "Testar voz" e "Verificar ambiente".
 - **Histórico:** as frases finalizadas na sessão, com "Copiar" (e "Copiar tudo").
@@ -252,7 +255,7 @@ python scripts/desenvolvimento/coletar_dados.py --sinal _NADA --pessoa ana   # c
 python scripts/desenvolvimento/coletar_dados.py --sinal A --pessoa ana       # letras: A a Z e Ç (opcionais)
 ```
 
-No menu do Windows (opção 3), digite `A-E` para gravar de A até E, `LETRAS` para o alfabeto
+No menu (opção 3), digite `A-E` para gravar de A até E, `LETRAS` para o alfabeto
 inteiro ou uma lista como `OI,A,B`.
 
 ESPAÇO inicia/pausa a gravação contínua, D apaga a última amostra, Q/ESC sai. Fique a
@@ -316,16 +319,20 @@ o roteiro do dia da apresentação em
 
 ## Limitações conhecidas
 
-- Vocabulário pequeno e fixo (10 sinais); sinais novos exigem gravar e treinar.
+- Vocabulário pequeno e fixo (10 sinais, mais as letras que forem gravadas); sinais novos
+  exigem gravar e treinar.
 - Não traduz a gramática da Libras: a frase é a sequência de sinais (glosa), e só as
   sequências cadastradas no `frases.txt` viram português.
-- Não usa expressões faciais nem datilologia (soletração); nomes próprios não são reconhecidos.
+- Não usa expressões faciais. Nomes próprios só por soletração (letras gravadas), uma
+  letra por vez.
 - Um sinal por vez: é preciso abaixar as mãos entre sinais iguais seguidos.
 - Precisa dos ombros visíveis (referência da normalização) e de boa iluminação.
 - O desempenho depende do dataset: poucas pessoas ou condições diferentes das da gravação
   reduzem a precisão com pessoas novas.
 - A voz depende das vozes instaladas no sistema operacional.
 - O modelo é salvo com `joblib` (pickle): só carregue modelos gerados por vocês.
+- Antivírus com proteção de webcam (ex.: Kaspersky Endpoint Security) pode entregar imagem
+  preta ao Python mesmo com a câmera funcionando em outros programas: é preciso liberar.
 
 ## Configuração
 
@@ -350,7 +357,9 @@ models/                     modelos do MediaPipe e classificador treinado
 reports/                    métricas e gráficos (desenvolvimento)
 tests/                      testes automatizados
 docs/                       arquitetura e descrição dos sinais
-windows/                    instalador de um clique e menu (INSTALAR.bat, Librahin.bat)
+windows/                    instalador de um clique e menu (chamados por INSTALAR.bat e Librahin.bat)
+librahin.sh                 o mesmo menu no Linux (precisa do PowerShell)
+frases.txt                  tabela de frases (glosa → português)
 ```
 
 Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 2.
@@ -366,4 +375,4 @@ Trabalho acadêmico do curso de Tecnologia em Análise e Desenvolvimento de Sist
 
 **Professor orientador:** Éder Lemes
 
-Os créditos também aparecem no menu do Windows (`Librahin.bat` → **C**).
+Os créditos também aparecem no menu (`Librahin.bat` ou `librahin.sh` → **C**).

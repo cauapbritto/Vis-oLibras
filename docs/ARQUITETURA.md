@@ -153,7 +153,9 @@ Librahin/
 │   │   ├── app.py               # interface gráfica (recomendada para apresentar)
 │   │   ├── executar.py          # versão simples em janela do OpenCV
 │   │   ├── testar_voz.py        # testa cada motor de voz do sistema
-│   │   └── testar_frases.py     # confere a tabela de frases (frases.txt)
+│   │   ├── testar_frases.py     # confere a tabela de frases (frases.txt)
+│   │   ├── diagnosticar_camera.py # testa cada câmera em cada modo e salva a melhor
+│   │   └── relatorio_camera.py  # relatório com o erro exato da câmera (para suporte)
 │   └── desenvolvimento/         # MODO DESENVOLVIMENTO
 │       ├── testar_deteccao.py   # diagnóstico: webcam → MediaPipe (sem reconhecimento)
 │       ├── coletar_dados.py     # grava amostras de um sinal
@@ -174,7 +176,10 @@ Librahin/
 │   └── metadata.csv
 ├── models/                      # (os dois modos) .task do MediaPipe + classificador treinado
 ├── reports/                     # (desenvolvimento) métricas e gráficos
-├── docs/                        # arquitetura, sinais, testes (TESTES.md) e checklist da demonstração
+├── docs/                        # arquitetura, sinais, testes (TESTES.md), tutorial e checklist
+├── windows/                     # instalador e menu (PowerShell); INSTALAR.bat e Librahin.bat na raiz
+├── librahin.sh                  # o mesmo menu no Linux (precisa do PowerShell)
+├── frases.txt                   # tabela de frases do grupo (glosa → português)
 └── tests/                       # testes (inclui test_modos.py, que garante a separação)
 ```
 
@@ -265,8 +270,9 @@ pytest
 Observações de instalação:
 
 - Usar **ambiente virtual** (`python -m venv .venv`).
-- **Windows:** `pyttsx3` usa as vozes SAPI5. Para voz em português, instalar o pacote de
-  idioma "Português (Brasil)" com recurso de fala (voz "Maria"/"Daniel").
+- **Windows:** a voz usa as vozes do sistema (System.Speech, por um processo do PowerShell;
+  o `pyttsx3` fica como alternativa). Para voz em português, instalar o pacote de idioma
+  "Português (Brasil)" com recurso de fala (voz "Maria"/"Daniel").
 - **Linux:** `pyttsx3` usa eSpeak: `sudo apt install espeak-ng` (voz robótica, mas funciona).
 - **Linux:** o MediaPipe 1.x precisa de bibliotecas gráficas: `sudo apt install libegl1 libgles2`.
 - **macOS:** usa a voz nativa do sistema (ex.: "Luciana").
@@ -618,7 +624,8 @@ MEU NOME  = Meu nome é
 
 ## 11. Conversão em voz (`voz.py`)
 
-- **Offline e gratuito:** Windows usa o **pyttsx3** (vozes SAPI5 do sistema); Linux usa o
+- **Offline e gratuito:** Windows usa as vozes do sistema (**System.Speech/SAPI**) por um
+  processo do PowerShell aberto desde o início, com o pyttsx3 como alternativa; Linux usa o
   pyttsx3 com eSpeak ou, se faltar o `aplay` (com o qual o pyttsx3 toca o som e sem o qual
   fica mudo sem avisar), o comando `espeak-ng`; macOS usa o comando `say` (o pyttsx3 trava
   fora da thread principal no Mac).
@@ -721,7 +728,8 @@ tentativas registradas. Os metadados da sessão (semente, modelo, limiares) fica
 | **5. Estabilidade** | `estabilizador.py` + `frase.py` + testes |
 | **6. Voz** | `voz.py` em thread |
 | **7. Avaliação** | protocolo de tempo real, métricas de latência, relatório final |
-| **Futuro** | mais sinais, LSTM, expressões faciais, datilologia (alfabeto), interface gráfica |
+| **Feito depois** | interface gráfica, alfabeto manual (soletração), tabela de frases, instalador e menu |
+| **Futuro** | mais sinais, LSTM, expressões faciais, bases públicas (ex.: MINDS-Libras) para testar com pessoas novas |
 
 ---
 
@@ -734,5 +742,5 @@ tentativas registradas. Os metadados da sessão (semente, modelo, limiares) fica
 | Funciona só para quem gravou | Várias pessoas na coleta; avaliação por pessoa |
 | Iluminação ruim / fundo poluído | Orientar ambiente; incluir variações na coleta |
 | Voz pt-BR indisponível no SO | Documentar instalação; fallback: exibir só texto |
-| Incompatibilidade de versões (MediaPipe × Python) | Python 3.11 + `requirements.txt` fixado |
+| Incompatibilidade de versões (MediaPipe × Python) | Python 3.10 a 3.12; o `requirements.txt` só define versões mínimas, então fixar as versões (`pip freeze`) antes da apresentação |
 | Canhotos | MVP: documentar mão dominante; futuro: *data augmentation* espelhando a amostra |

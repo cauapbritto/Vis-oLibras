@@ -4,6 +4,7 @@
 - [ ] Modelo treinado e avaliado (`treinar_modelo.py`, `avaliar_modelo.py`)
 - [ ] `python scripts/desenvolvimento/empacotar_app.py` e copiar o zip para o computador da apresentação (e para um pen drive)
 - [ ] No computador da apresentação: instalar (`LEIA-ME.txt` do zip) e rodar uma vez **sem internet**
+- [ ] Menu → **D** no computador da apresentação: a câmera dá imagem boa (se vier preta, ver antivírus/TI no tutorial)
 - [ ] Voz em português instalada (Windows: Configurações → Idioma → Português (Brasil) com fala)
 - [ ] Checklist manual (`docs/TESTES.md`, seção 2) feito no local ou com luz parecida
 
@@ -19,6 +20,7 @@
 
 ## Durante
 - Entre um sinal e outro, **abaixar as mãos** (é assim que o sistema separa as palavras)
+- Para encerrar a frase sozinha, **parar as mãos** por 2,5 s (enquanto as mãos se mexem ela não encerra)
 - Sinal errado: **Remover última palavra** (ou Backspace)
 - Frase pronta: **Finalizar frase** (ou Espaço) → aparece e é falada
 - Se travar ou a câmera sumir: **Parar câmera** → **Iniciar câmera**; em último caso, fechar e abrir de novo
