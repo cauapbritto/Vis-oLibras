@@ -71,7 +71,7 @@ def arquivos_do_pacote(raiz: Path) -> list[Path]:
     arquivos.append(Path("requirements.txt"))
     if config.ARQ_FRASES.is_file():
         arquivos.append(config.ARQ_FRASES.relative_to(raiz))
-    arquivos += [Path("INSTALAR.bat"), Path("Librahin.bat")]
+    arquivos += [Path("INSTALAR.bat"), Path("Librahin.bat"), Path("librahin.sh")]
     arquivos += sorted(p.relative_to(raiz) for p in (raiz / "windows").glob("*.ps1"))
     for modelo in (config.ARQ_MODELO, config.ARQ_CLASSES, config.ARQ_MODELO_INFO,
                    config.ARQ_HAND_LANDMARKER, config.ARQ_POSE_LANDMARKER):

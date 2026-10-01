@@ -69,7 +69,15 @@ pip install -r requirements.txt
 > pip: `python -m pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org`
 > e depois instale normalmente — o pip novo usa os certificados do Windows. Ou use outra rede.
 
-**Linux / macOS:**
+**Linux, com o mesmo menu de terminal do Windows** (precisa do PowerShell:
+`sudo snap install powershell --classic`):
+
+```bash
+./librahin.sh instalar   # só na primeira vez: cria o .venv e instala as bibliotecas
+./librahin.sh            # abre o menu (aplicação, gravar, treinar, diagnóstico...)
+```
+
+**Linux / macOS, sem o menu:**
 
 ```bash
 python3.11 -m venv .venv

@@ -4,7 +4,8 @@ $Sinais = "OI", "EU", "MEU", "NOME", "BOM", "DIA", "OBRIGADO", "SIM", "NAO", "AJ
 $Letras = @([char[]](65..90) | ForEach-Object { [string]$_ }) + "C_CEDILHA"   # A a Z e Ç
 
 if (-not (Test-Path $PythonVenv)) {
-    Erro "O projeto ainda não foi instalado. Dê dois cliques em INSTALAR.bat primeiro."
+    if ($NoWindows) { Erro "O projeto ainda não foi instalado. Dê dois cliques em INSTALAR.bat primeiro." }
+    else            { Erro "O projeto ainda não foi instalado. Rode primeiro: ./librahin.sh instalar" }
     Pausar
     exit 1
 }
