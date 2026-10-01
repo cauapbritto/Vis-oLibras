@@ -75,6 +75,8 @@ def main() -> int:
             print("   - Windows: Configurações > Privacidade e segurança > Câmera > ligue \"Acesso à câmera\"")
             print("     e \"Permitir que aplicativos da área de trabalho acessem a câmera\";")
             print("   - teclado de notebook: algumas marcas têm uma tecla (F8/F10) que desliga a câmera;")
+            print("   - antivírus com \"proteção de webcam\" (Kaspersky, ESET, Bitdefender, Avast) entrega imagem")
+            print("     preta a programas que ele não conhece: libere o python.exe ou o Librahin no antivírus;")
             if platform.system() == "Windows":
                 resposta = input("Abrir agora a tela de privacidade da câmera do Windows? [S/n] ").strip().lower()
                 if not resposta.startswith("n"):

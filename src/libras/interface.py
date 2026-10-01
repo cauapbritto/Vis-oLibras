@@ -277,10 +277,13 @@ class JanelaConfiguracoes:
         ctk.CTkLabel(corpo, text="Modo da câmera (troque se a imagem vier com listras ou não abrir)",
                      font=f_texto, text_color=TEXTO, anchor="w").pack(fill="x", pady=(0, 4))
         modos = {"Automático": "auto", "DirectShow": "dshow", "DirectShow MJPG": "dshow_mjpg",
-                 "Media Foundation": "msmf"}
-        modo = ctk.CTkSegmentedButton(corpo, values=list(modos), font=f_peq, selected_color=DESTAQUE,
-                                      selected_hover_color=DESTAQUE_HOVER,
-                                      command=lambda rotulo: app._aplicar_preferencia("modo_camera", modos[rotulo]))
+                 "Media Foundation": "msmf", "Media Foundation (resolução da câmera)": "msmf_nativo",
+                 "DirectShow (resolução da câmera)": "dshow_nativo"}
+        modo = ctk.CTkOptionMenu(corpo, values=list(modos), width=320, font=f_peq, dropdown_font=f_peq,
+                                 fg_color=BOTAO, button_color=BOTAO, button_hover_color=BOTAO_HOVER,
+                                 text_color=TEXTO, dropdown_fg_color=SUPERFICIE,
+                                 dropdown_hover_color=BOTAO_HOVER, dropdown_text_color=TEXTO,
+                                 command=lambda rotulo: app._aplicar_preferencia("modo_camera", modos[rotulo]))
         modo.set(next((r for r, valor in modos.items() if valor == v["modo_camera"]), "Automático"))
         modo.pack(anchor="w")
 

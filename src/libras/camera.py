@@ -28,14 +28,18 @@ class ErroCamera(RuntimeError):
 
 # Modos de abrir a câmera. "auto" tenta, no Windows: DirectShow pedindo MJPG (rápido e
 # com cores certas na maioria das webcams), Media Foundation e DirectShow simples, e
-# fica com o primeiro que entrega uma imagem sem defeito.
-MODOS_CAMERA = ("auto", "dshow_mjpg", "dshow", "msmf", "padrao")
+# fica com o primeiro que entrega uma imagem sem defeito. Os modos "_nativo" não pedem
+# 640x480: algumas câmeras de notebook só mandam imagem na resolução delas.
+MODOS_CAMERA = ("auto", "dshow_mjpg", "dshow", "msmf", "msmf_nativo", "dshow_nativo", "padrao")
 NOMES_MODOS = {"dshow_mjpg": "DirectShow MJPG", "dshow": "DirectShow", "msmf": "Media Foundation",
-               "padrao": "Padrão do OpenCV"}
+               "msmf_nativo": "Media Foundation (resolução da câmera)",
+               "dshow_nativo": "DirectShow (resolução da câmera)", "padrao": "Padrão do OpenCV"}
 
 
 def modos_do_sistema() -> list[str]:
-    return ["dshow_mjpg", "msmf", "dshow"] if platform.system() == "Windows" else ["padrao"]
+    if platform.system() == "Windows":
+        return ["dshow_mjpg", "msmf", "dshow", "msmf_nativo", "dshow_nativo"]
+    return ["padrao"]
 
 
 def _candidatos(modo: str) -> list[str]:
@@ -46,7 +50,7 @@ def _abrir_modo(indice: int, modo: str, largura: int, altura: int):
     """VideoCapture aberto no modo pedido, ou None se não abriu."""
     if modo.startswith("dshow"):
         captura = cv2.VideoCapture(indice, cv2.CAP_DSHOW)
-    elif modo == "msmf":
+    elif modo.startswith("msmf"):
         captura = cv2.VideoCapture(indice, cv2.CAP_MSMF)
     else:
         captura = cv2.VideoCapture(indice)
@@ -55,8 +59,9 @@ def _abrir_modo(indice: int, modo: str, largura: int, altura: int):
         return None
     if modo == "dshow_mjpg":
         captura.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-    captura.set(cv2.CAP_PROP_FRAME_WIDTH, largura)
-    captura.set(cv2.CAP_PROP_FRAME_HEIGHT, altura)
+    if not modo.endswith("_nativo"):
+        captura.set(cv2.CAP_PROP_FRAME_WIDTH, largura)
+        captura.set(cv2.CAP_PROP_FRAME_HEIGHT, altura)
     return captura
 
 
@@ -314,6 +319,8 @@ def diagnosticar(maximo: int = config.MAX_CAMERAS_PROCURAR, quadros: int = 15) -
 
 
 def melhor_combinacao(resultados: list[TesteCamera]) -> TesteCamera | None:
-    """A combinação com imagem boa e o maior FPS (ou None se nenhuma deu imagem boa)."""
+    """A combinação com imagem boa e o maior FPS (ou None se nenhuma deu imagem boa).
+    Os modos "_nativo" só entram se nenhum outro der certo: 640x480 é mais leve."""
     boas = [r for r in resultados if r.bom]
+    boas = [r for r in boas if not r.modo.endswith("_nativo")] or boas
     return max(boas, key=lambda r: r.fps) if boas else None
