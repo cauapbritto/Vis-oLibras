@@ -22,7 +22,9 @@ fi
 if ! command -v pwsh >/dev/null 2>&1; then
     echo "O menu precisa do PowerShell (pwsh). Instale com:"
     echo "    sudo snap install powershell --classic"
-    echo "ou veja: https://learn.microsoft.com/powershell/scripting/install/install-ubuntu"
+    echo "No Linux Mint (que vem sem o snap): baixe o arquivo powershell_..._amd64.deb em"
+    echo "    https://github.com/PowerShell/PowerShell/releases/latest"
+    echo "e instale com: sudo apt install ./powershell_*_amd64.deb"
     echo
     echo "Sem o menu, dá para usar os scripts direto, ex.: .venv/bin/python scripts/demonstracao/app.py"
     exit 1

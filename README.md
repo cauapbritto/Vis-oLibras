@@ -70,7 +70,9 @@ pip install -r requirements.txt
 > e depois instale normalmente — o pip novo usa os certificados do Windows. Ou use outra rede.
 
 **Linux, com o mesmo menu de terminal do Windows** (precisa do PowerShell:
-`sudo snap install powershell --classic`):
+`sudo snap install powershell --classic`; no Linux Mint, que vem sem o snap, instale o
+`powershell_..._amd64.deb` da [página de versões](https://github.com/PowerShell/PowerShell/releases/latest)
+com `sudo apt install ./powershell_*_amd64.deb`):
 
 ```bash
 ./librahin.sh instalar   # só na primeira vez: cria o .venv e instala as bibliotecas
