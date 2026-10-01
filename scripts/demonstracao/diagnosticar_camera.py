@@ -15,6 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))  # funciona sem "pip install -e ."
 
+import libras  # noqa: E402,F401  (configura o OpenCV antes de importá-lo)
+
 import cv2  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 

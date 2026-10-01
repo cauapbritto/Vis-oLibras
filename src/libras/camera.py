@@ -60,7 +60,7 @@ def _abrir_modo(indice: int, modo: str, largura: int, altura: int):
     return captura
 
 
-def _primeiro_quadro(captura, tentativas: int = 10) -> np.ndarray | None:
+def _primeiro_quadro(captura, tentativas: int = 40) -> np.ndarray | None:
     """Algumas câmeras demoram alguns quadros para "acordar": tenta algumas vezes."""
     for _ in range(tentativas):
         ok, frame = captura.read()

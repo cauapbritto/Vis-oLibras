@@ -13,6 +13,13 @@ demonstração (scripts/desenvolvimento/empacotar_app.py) leva só o núcleo e a
 aplicação.
 """
 
+import os
+
+# Media Foundation (Windows): as "transformações por hardware" do OpenCV fazem algumas
+# webcams demorarem muito para abrir ou não mandarem imagem. Precisa valer antes de o
+# OpenCV abrir a primeira câmera.
+os.environ.setdefault("OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS", "0")
+
 __version__ = "0.3.0"
 
 MODULOS_NUCLEO = ("config", "camera", "extrator", "features", "temporal", "desenho", "metricas")
