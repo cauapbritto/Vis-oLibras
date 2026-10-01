@@ -95,6 +95,7 @@ def main() -> int:
         print("   - trocar a webcam de porta USB (de preferência direto no computador, sem hub);")
         print("   - fechar programas da própria câmera (ex.: Logitech Capture, Logi Tune);")
         print("   - reinstalar o driver da câmera pelo Gerenciador de Dispositivos.")
+        print("\nPara descobrir o erro exato, rode a opção R do menu e envie o relatório.")
         return 1
 
     print(f"\nMelhor: Câmera {melhor.indice + 1} no modo {NOMES_MODOS[melhor.modo]} ({melhor.descricao}).")
