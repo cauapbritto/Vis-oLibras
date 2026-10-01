@@ -73,6 +73,10 @@ def main() -> int:
             print("   - Windows: Configurações > Privacidade e segurança > Câmera > ligue \"Acesso à câmera\"")
             print("     e \"Permitir que aplicativos da área de trabalho acessem a câmera\";")
             print("   - teclado de notebook: algumas marcas têm uma tecla (F8/F10) que desliga a câmera;")
+            if platform.system() == "Windows":
+                resposta = input("Abrir agora a tela de privacidade da câmera do Windows? [S/n] ").strip().lower()
+                if not resposta.startswith("n"):
+                    os.startfile("ms-settings:privacy-webcam")
         if any(r.lenta for r in resultados):
             print("Poucos quadros por segundo costuma ser a porta USB ou falta de luz:")
             print("   - ligue a webcam direto no computador (sem hub nem extensão), de preferência USB 3 (azul);")
