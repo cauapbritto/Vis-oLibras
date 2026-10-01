@@ -58,16 +58,22 @@ class GerenciadorSentenca:
         self.confianca_atual = 0.0
         self.ultimo_confirmado: str | None = None
         self.momento_ultimo = float("-inf")
+        self.momento_atividade = float("-inf")   # última vez que a pessoa estava sinalizando
         self.palavras: list[str] = []
         self.frase_final = ""
         self.glosa_final = ""
 
     # --- sinal atual (não confirmado) --------------------------------------
 
-    def atualizar_deteccao(self, sinal: str | None, confianca: float = 0.0) -> None:
-        """O que o modelo está vendo agora. NÃO entra na sequência."""
+    def atualizar_deteccao(self, sinal: str | None, confianca: float = 0.0,
+                           em_movimento: bool = False, agora: float | None = None) -> None:
+        """O que o modelo está vendo agora. NÃO entra na sequência. Com `agora`, também
+        registra se a pessoa está sinalizando (mãos se mexendo ou um sinal visto com
+        confiança): enquanto ela sinaliza, a pausa que encerra a frase não conta."""
         self.sinal_atual = None if sinal == config.CLASSE_NADA else sinal
         self.confianca_atual = confianca if self.sinal_atual else 0.0
+        if agora is not None and (em_movimento or self.confianca_atual >= config.LIMIAR_CONFIANCA):
+            self.registrar_atividade(agora)
 
     # --- sequência ----------------------------------------------------------
 
@@ -118,8 +124,15 @@ class GerenciadorSentenca:
             self.ao_finalizar(self.frase_final)
         return self.frase_final
 
+    def registrar_atividade(self, agora: float) -> None:
+        """A pessoa está sinalizando (mãos se mexendo ou um sinal sendo visto): a pausa
+        que encerra a frase só começa a contar quando ela para. Assim um sinal feito
+        devagar não encerra a frase no meio."""
+        self.momento_atividade = agora
+
     def pausa_detectada(self, agora: float) -> bool:
-        return bool(self.palavras) and agora - self.momento_ultimo >= self.pausa_s
+        ultimo = max(self.momento_ultimo, self.momento_atividade)
+        return bool(self.palavras) and agora - ultimo >= self.pausa_s
 
     def verificar_pausa(self, agora: float) -> str | None:
         """Encerra a frase se passou `pausa_s` sem palavras novas."""

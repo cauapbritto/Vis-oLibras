@@ -76,6 +76,30 @@ def test_pausa_encerra_a_frase():
     assert finalizadas == ["OI"] and g.verificar_pausa(30.0) is None
 
 
+def test_sinal_feito_devagar_nao_encerra_a_frase_no_meio():
+    """A pausa só conta depois que as mãos param: fazer o próximo sinal devagar
+    (mais que a pausa) não encerra a frase."""
+    g, finalizadas = _g(pausa_s=2.5)
+    g.adicionar("EU", 10.0)
+    for t in (11.0, 12.0, 13.0, 14.0):                 # mãos se mexendo: próximo sinal
+        g.atualizar_deteccao(None, 0.0, em_movimento=True, agora=t)
+        assert g.verificar_pausa(t + 0.5) is None
+    g.adicionar("NOME", 14.5)
+    g.atualizar_deteccao(config.CLASSE_NADA, 1.0, em_movimento=False, agora=15.0)
+    assert g.verificar_pausa(16.9) is None
+    assert g.verificar_pausa(17.1) == "EU NOME"       # 2,5 s parado depois do último sinal
+    assert finalizadas == ["EU NOME"]
+
+
+def test_sinal_visto_com_confianca_conta_como_atividade():
+    g, _ = _g(pausa_s=2.5)
+    g.adicionar("EU", 10.0)
+    g.atualizar_deteccao("NOME", 0.95, agora=12.0)           # segurando um sinal parado
+    assert g.verificar_pausa(13.0) is None
+    g.atualizar_deteccao("NOME", 0.30, agora=13.0)           # palpite fraco não segura a frase
+    assert g.verificar_pausa(14.6) is not None
+
+
 def test_frase_cheia_e_encerrada_antes_da_proxima_palavra():
     g, finalizadas = _g(max_palavras=2)
     g.adicionar("EU", 0.0)

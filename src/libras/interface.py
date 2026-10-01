@@ -946,7 +946,8 @@ class AplicacaoLibras(ctk.CTk):
         imagem = _arredondar(imagem, RAIO)
         self._imagem_tk = ctk.CTkImage(light_image=imagem, dark_image=imagem, size=imagem.size)
         self.video.configure(image=self._imagem_tk)
-        self.sentenca.atualizar_deteccao(quadro.estado.sinal, quadro.estado.confianca)
+        self.sentenca.atualizar_deteccao(quadro.estado.sinal, quadro.estado.confianca,
+                                         quadro.estado.em_movimento, quadro.momento)
         self._ultimo_resultado = quadro.resultado
         extra = f"   modelo {quadro.estado.tempo_inferencia_ms:.0f} ms" if self.classificador else ""
         leve = "   modo leve" if getattr(quadro, "leve", False) else ""

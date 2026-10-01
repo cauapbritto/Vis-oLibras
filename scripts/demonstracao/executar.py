@@ -120,7 +120,7 @@ def executar(args) -> None:
 
                 quadro = pipeline.processar(frame)
                 estado, agora = quadro.estado, quadro.momento
-                sentenca.atualizar_deteccao(estado.sinal, estado.confianca)
+                sentenca.atualizar_deteccao(estado.sinal, estado.confianca, estado.em_movimento, agora)
                 if estado.palavra and sentenca.adicionar(estado.palavra, agora):
                     aceita = (estado.palavra, agora)
                     print(f"[{time.strftime('%H:%M:%S')}] palavra: {config.rotulo_exibicao(estado.palavra)} "

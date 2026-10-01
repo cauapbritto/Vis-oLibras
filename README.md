@@ -122,7 +122,8 @@ formatos de mão parecidos: confira os pares confundidos na matriz de confusão 
 treinar.
 
 **Resposta mais rápida.** Por padrão, a frase é falada quando termina: com o botão/Espaço
-(na hora) ou depois de 2,5 s sem sinais (`PAUSA_FRASE_S`). Ligando a chave **"Falar cada
+(na hora) ou depois de 2,5 s parado (`PAUSA_FRASE_S`). A pausa só conta com as mãos paradas:
+enquanto elas se mexem, um sinal feito devagar não encerra a frase no meio. Ligando a chave **"Falar cada
 palavra assim que for reconhecida"** na janela, cada palavra é falada logo que é confirmada,
 e no final a frase só é falada de novo se a tabela de frases ou a soletração mudaram o texto
 ("Meu nome é Caua"). No Windows, a voz fica carregada num processo aberto desde o início,

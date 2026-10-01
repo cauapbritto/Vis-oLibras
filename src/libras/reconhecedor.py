@@ -33,6 +33,7 @@ class EstadoReconhecimento:
     aviso: str | None = None       # ex.: ombros não visíveis
     tempo_inferencia_ms: float = 0.0
     inferiu: bool = False          # o modelo rodou NESTE frame (tempo_inferencia_ms é deste frame)
+    em_movimento: bool = False     # as mãos estão se mexendo (a pessoa está sinalizando)
 
 
 INTERVALO_VELOCIDADE_S = 0.2  # intervalo usado para medir a velocidade das mãos
@@ -92,15 +93,17 @@ class Reconhecedor:
         """Chamar uma vez por frame com a linha de landmarks crus."""
         self.buffer.adicionar(linha)
         self._frames += 1
-        parou = self.gatilho_fim_movimento and self._parou_de_mexer(linha)
+        parou = self._parou_de_mexer(linha) and self.gatilho_fim_movimento
+        mexendo = self._velocidade > config.VELOCIDADE_PARADA
         if parou:
             self._frames = 0  # o próximo passo regular conta a partir daqui
         if (self._frames % self.passo_inferencia and not parou) or not self.buffer.pronta():
             # Entre inferências, repete a última previsão (sem palavra nova).
             return EstadoReconhecimento(self._ultimo.sinal, self._ultimo.confianca, None,
-                                        self._ultimo.aviso, self._ultimo.tempo_inferencia_ms)
+                                        self._ultimo.aviso, self._ultimo.tempo_inferencia_ms,
+                                        em_movimento=mexendo)
 
-        estado = EstadoReconhecimento()
+        estado = EstadoReconhecimento(em_movimento=mexendo)
         if self.buffer.pct_com_maos() < config.MIN_PCT_MAOS_JANELA:
             # Sem mãos: nem chama o modelo. Conta como "soltar o sinal".
             estado.sinal, estado.confianca = config.CLASSE_NADA, 1.0

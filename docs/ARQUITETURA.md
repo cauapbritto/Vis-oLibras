@@ -573,7 +573,9 @@ Essa classe **não depende de câmera** — recebe `(sinal, confiança, tempo)` 
 
 1. Cada palavra confirmada é **adicionada** à lista da frase atual.
 2. **Pausa encerra a frase:** se passar `PAUSA_FRASE_S = 2.5` s sem novas palavras
-   (normalmente com as mãos abaixadas), a frase é finalizada e enviada para a voz.
+   **e sem a pessoa sinalizar** (mãos paradas e nenhum sinal visto com confiança), a
+   frase é finalizada e enviada para a voz. Enquanto as mãos se mexem, a pausa não
+   conta: um sinal feito devagar não encerra a frase no meio.
 3. Limite de segurança: `MAX_PALAVRAS = 8`.
 4. Correção manual: `BACKSPACE` remove a última palavra; `C` limpa.
 
