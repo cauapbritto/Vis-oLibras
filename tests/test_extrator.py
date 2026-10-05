@@ -89,7 +89,6 @@ def test_linha_bruta_tem_layout_fixo():
     resultado = ResultadoExtracao([_mao_falsa("Left", 0.4)], pose=None, largura=640, altura=480)
     l = para_linha_bruta(resultado, 1.25)
     assert l.shape == (config.TAM_FRAME_BRUTO,)
-    assert l[config.COL_TIMESTAMP] == pytest.approx(1.25)
     assert not l[config.COL_MAO_DIREITA].any()
     assert list(l[config.COL_FLAGS]) == [0.0, 1.0]
     esquerda = l[config.COL_MAO_ESQUERDA].reshape(21, 3)
@@ -104,3 +103,16 @@ def test_extrai_pose_da_imagem_real(extrator, imagem_duas_maos):
     linha = para_linha_bruta(resultado, 0.0)
     assert linha[config.COL_POSE].any()
     assert list(linha[config.COL_FLAGS]) == [1.0, 1.0]
+
+
+def test_timestamps_grandes_continuam_em_ordem(monkeypatch):
+    """perf_counter() do Windows depois de ~14 dias ligado: em float32, frames a ~11 fps
+    ficavam com o mesmo tempo e a gravação era descartada ("timestamps fora de ordem")."""
+    import numpy as np
+    import libras.extrator as extrator
+    monkeypatch.setattr(extrator, "_origem_tempo", None)
+    resultado = ResultadoExtracao([], pose=None, largura=640, altura=480)
+    tempos = [para_linha_bruta(resultado, 1243918.89 + i * 0.092)[config.COL_TIMESTAMP] for i in range(20)]
+    diferencas = np.diff(tempos)
+    assert np.all(diferencas > 0)
+    assert diferencas == pytest.approx(0.092, abs=1e-4)

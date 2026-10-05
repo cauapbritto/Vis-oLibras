@@ -101,14 +101,29 @@ class ResultadoExtracao:
         return self.maos_por_lado().get(lado)
 
 
+_origem_tempo: float | None = None
+
+
+def _tempo_relativo(timestamp: float) -> float:
+    """Segundos desde o primeiro frame deste processo. A linha é float32 (~7 dígitos):
+    o time.perf_counter() do Windows conta desde que o computador ligou e, depois de
+    alguns dias ligado (ex.: 1243918,89 s), o float32 arredonda de 0,125 em 0,125 s -
+    frames seguidos ficavam com o mesmo tempo ("timestamps fora de ordem")."""
+    global _origem_tempo
+    if _origem_tempo is None:
+        _origem_tempo = timestamp
+    return timestamp - _origem_tempo
+
+
 def para_linha_bruta(resultado: ResultadoExtracao, timestamp: float) -> np.ndarray:
     """Linha de landmarks crus de um frame, sempre com config.TAM_FRAME_BRUTO valores.
 
     [timestamp | mão direita (63) | mão esquerda (63) | flags (2) | pose (99)]
-    Mão ausente = zeros com flag 0. Pose ausente = zeros.
+    Mão ausente = zeros com flag 0. Pose ausente = zeros. O timestamp é guardado relativo
+    ao primeiro frame do processo (só as diferenças entre frames importam).
     """
     linha = np.zeros(config.TAM_FRAME_BRUTO, dtype=np.float32)
-    linha[config.COL_TIMESTAMP] = timestamp
+    linha[config.COL_TIMESTAMP] = _tempo_relativo(timestamp)
 
     # x e z em "unidades da altura da imagem" (ver config.py)
     proporcao = np.array([resultado.largura / resultado.altura, 1.0, resultado.largura / resultado.altura],
