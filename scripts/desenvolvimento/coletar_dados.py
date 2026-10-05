@@ -47,6 +47,7 @@ class Coletor:
         self.pessoa = pessoa
         self.meta = meta
         self.estado = PAUSADO
+        self.leve = False          # modo leve ligado (só para mostrar no painel)
         self.fim_preparo = 0.0
         self.inicio_gravacao = 0.0
         self.frames: list[np.ndarray] = []
@@ -127,7 +128,7 @@ class Coletor:
              f"Descartadas: {self.descartadas}", COR_TEXTO),
             (descrever_maos(resultado), COR_TEXTO if maos_ok else COR_AVISO),
             ombros,
-            (f"FPS: {fps:.1f}", COR_TEXTO),
+            (f"FPS: {fps:.1f}" + ("  (modo leve)" if self.leve else ""), COR_TEXTO),
             estado,
             self.mensagem,
             ("ESPAÇO iniciar/pausar | D desfazer | Q sair", COR_TEXTO),
@@ -137,8 +138,10 @@ class Coletor:
 def executar(sinal: str, pessoa: str, meta: int, indice_camera: int) -> None:
     coletor = Coletor(sinal, pessoa, meta)
     fps = ContadorFPS()
+    fps_baixo_desde = None
 
     with Camera(indice=indice_camera) as camera, ExtratorLandmarks() as extrator:
+        extrator.leve = coletor.leve = config.MODO_LEVE == "ligado"
         print(f"Coletando '{sinal}' (pessoa: {pessoa}). Já existem {coletor.total_sinal} amostras.")
         cv2.namedWindow(config.NOME_JANELA)
 
@@ -155,7 +158,18 @@ def executar(sinal: str, pessoa: str, meta: int, indice_camera: int) -> None:
 
             desenhar_pose(frame, resultado)
             desenhar_maos(frame, resultado)
-            desenhar_painel(frame, coletor.linhas_painel(resultado, fps.atualizar(agora), agora))
+            fps_atual = fps.atualizar(agora)
+            # Computador lento: o mesmo modo leve da aplicação (ombros 1 a cada 3 quadros e
+            # imagem menor para o MediaPipe), para não descartar amostras por poucos frames.
+            if config.MODO_LEVE == "auto" and not extrator.leve and fps_atual > 0:
+                if fps_atual >= config.FPS_MINIMO_MODO_LEVE:
+                    fps_baixo_desde = None
+                elif fps_baixo_desde is None:
+                    fps_baixo_desde = agora
+                elif agora - fps_baixo_desde >= config.SEGUNDOS_FPS_BAIXO:
+                    extrator.leve = coletor.leve = True
+                    print("Computador lento: modo leve ligado (mais quadros por segundo).")
+            desenhar_painel(frame, coletor.linhas_painel(resultado, fps_atual, agora))
             if coletor.estado == GRAVANDO:
                 desenhar_borda(frame, COR_GRAVANDO)
                 desenhar_barra_progresso(
